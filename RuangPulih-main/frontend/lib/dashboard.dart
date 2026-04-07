@@ -43,10 +43,8 @@ class _DashboardPageState extends State<DashboardPage> {
 
   static const _layanan = [
     _LayananItem(icon: Icons.chat_bubble_outline_rounded, label: 'Curhat Bebas', sub: 'Ceritakan apa saja'),
-    _LayananItem(icon: Icons.self_improvement_rounded, label: 'Meditasi', sub: 'Latihan tenang'),
     _LayananItem(icon: Icons.edit_note_rounded, label: 'Jurnal Harian', sub: 'Tulis perasaan'),
     _LayananItem(icon: Icons.people_outline_rounded, label: 'Forum Anonim', sub: 'Tanpa identitas'),
-    _LayananItem(icon: Icons.air_rounded, label: 'Breathing', sub: 'Teknik napas'),
     _LayananItem(icon: Icons.mood_rounded, label: 'Mood Track', sub: 'Pantau emosi'),
   ];
 
@@ -426,47 +424,55 @@ class _DashboardPageState extends State<DashboardPage> {
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,
+        crossAxisCount: 2,
         mainAxisSpacing: 12,
         crossAxisSpacing: 12,
-        childAspectRatio: 0.95,
+        childAspectRatio: 1.6,
       ),
       itemCount: _layanan.length,
       itemBuilder: (context, i) {
         final item = _layanan[i];
         return GestureDetector(
-          onTap: i == 3 ? _goToForum : null,
+          onTap: i == 2 ? _goToForum : null,
           child: Container(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
               color: AppColors.card,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(color: AppColors.border2, width: 0.5),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Container(
-                  width: 36,
-                  height: 36,
+                  width: 38,
+                  height: 38,
                   decoration: BoxDecoration(
                     color: AppColors.accentBg,
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(11),
                   ),
-                  child: Icon(item.icon, size: 18, color: AppColors.hero),
+                  child: Icon(item.icon, size: 20, color: AppColors.hero),
                 ),
-                const Spacer(),
-                Text(item.label,
-                    style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.text1)),
-                const SizedBox(height: 2),
-                Text(item.sub,
-                    style: const TextStyle(
-                        fontSize: 10, color: AppColors.text3),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(item.label,
+                          style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.text1)),
+                      const SizedBox(height: 2),
+                      Text(item.sub,
+                          style: const TextStyle(
+                              fontSize: 11, color: AppColors.text3),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis),
+                    ],
+                  ),
+                ),
               ],
             ),
           ),
