@@ -10,7 +10,10 @@ export declare class AuthService {
         id: number;
         email: string;
         fullName: string;
+        avatarUrl: string;
         isActive: boolean;
+        level: number;
+        exp: number;
         createdAt: Date;
         updatedAt: Date;
     }>;

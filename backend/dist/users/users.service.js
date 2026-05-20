@@ -35,8 +35,23 @@ let UsersService = class UsersService {
         const user = this.usersRepository.create(userData);
         return this.usersRepository.save(user);
     }
+    async update(id, userData) {
+        await this.usersRepository.update(id, userData);
+        return this.findOne(id);
+    }
     async remove(id) {
         await this.usersRepository.delete(id);
+    }
+    async addExp(id, amount) {
+        const user = await this.findOne(id);
+        if (!user)
+            return null;
+        user.exp += amount;
+        const newLevel = Math.floor(user.exp / 100) + 1;
+        if (newLevel > user.level) {
+            user.level = newLevel;
+        }
+        return this.usersRepository.save(user);
     }
 };
 exports.UsersService = UsersService;

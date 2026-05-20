@@ -4,6 +4,12 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'forum.dart';
 import 'login.dart';
+import 'curhat_bebas.dart';
+import 'jurnal_harian.dart';
+import 'habit_tracker.dart';
+import 'artikel_untukmu.dart';
+import 'edit_profile.dart';
+import 'api_service.dart';
 
 // Warna utama
 class AppColors {
@@ -30,8 +36,11 @@ class _DashboardPageState extends State<DashboardPage> {
   int? _selectedMood;
   String _userName = 'User';
   String _userEmail = '';
+  String? _userAvatarUrl;
   int? _userId;
   String? _token;
+  int _userLevel = 1;
+  int _userExp = 0;
 
   // --- DATA STATIS ---
   static const _navItems = [
@@ -54,7 +63,7 @@ class _DashboardPageState extends State<DashboardPage> {
     _LayananItem(icon: Icons.chat_bubble_outline_rounded, label: 'Curhat Bebas', sub: 'Ceritakan apa saja'),
     _LayananItem(icon: Icons.edit_note_rounded, label: 'Jurnal Harian', sub: 'Tulis perasaan'),
     _LayananItem(icon: Icons.people_outline_rounded, label: 'Forum Anonim', sub: 'Tanpa identitas'),
-    _LayananItem(icon: Icons.mood_rounded, label: 'Mood Track', sub: 'Pantau emosi'),
+    _LayananItem(icon: Icons.check_circle_outline_rounded, label: 'Habit Tracker', sub: 'Lacak kebiasaan'),
   ];
 
   static const _forumPosts = [
@@ -94,7 +103,10 @@ class _DashboardPageState extends State<DashboardPage> {
       setState(() {
         _userName = userData['fullName'] ?? 'User';
         _userEmail = userData['email'] ?? '';
+        _userAvatarUrl = userData['avatarUrl'];
         _userId = userData['id'];
+        _userLevel = userData['level'] ?? 1;
+        _userExp = userData['exp'] ?? 0;
         _token = token;
       });
       _loadLatestMood();
@@ -105,7 +117,7 @@ class _DashboardPageState extends State<DashboardPage> {
     if (_userId == null || _token == null) return;
     try {
       final response = await http.get(
-        Uri.parse('http://localhost:3000/moods/latest/$_userId'),
+        Uri.parse('http://10.0.2.2:3000/moods/latest/$_userId'),
         headers: {
           'Authorization': 'Bearer $_token',
         },
@@ -119,7 +131,7 @@ class _DashboardPageState extends State<DashboardPage> {
         }
       }
     } catch (e) {
-      debugPrint('Gagal memuat mood: $e');
+      // Mood load error ignored
     }
   }
 
@@ -130,7 +142,7 @@ class _DashboardPageState extends State<DashboardPage> {
 
     try {
       await http.post(
-        Uri.parse('http://localhost:3000/moods'),
+        Uri.parse('http://10.0.2.2:3000/moods'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $_token',
@@ -142,7 +154,7 @@ class _DashboardPageState extends State<DashboardPage> {
         }),
       );
     } catch (e) {
-      debugPrint('Gagal menyimpan mood: $e');
+      // Mood save error ignored
     }
   }
 
@@ -185,6 +197,23 @@ class _DashboardPageState extends State<DashboardPage> {
       case 2: return const ForumPage();
       case 3: return _buildPlaceholderTab('Aktifitas Kamu');
       case 4: return _buildProfilTab();
+      case 5: return CurhatBebasPage(onBack: () {
+        _loadUserData();
+        setState(() => _selectedIndex = 0);
+      });
+      case 6: return JurnalHarianPage(onBack: () {
+        _loadUserData();
+        setState(() => _selectedIndex = 0);
+      });
+      case 7: return HabitTrackerPage(onBack: () {
+        _loadUserData();
+        setState(() => _selectedIndex = 0);
+      });
+      case 8: return ArtikelUntukmuPage(
+        onBack: () => setState(() => _selectedIndex = 0),
+        selectedIndex: _selectedIndex,
+        onNavTap: (i) => setState(() => _selectedIndex = i),
+      );
       default: return _buildBerandaTab();
     }
   }
@@ -228,7 +257,7 @@ class _DashboardPageState extends State<DashboardPage> {
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(22, 24, 22, 0),
-            child: _buildSectionHeader('Artikel untukmu'),
+            child: _buildSectionHeader('Artikel untukmu', onLihatSemua: () => setState(() => _selectedIndex = 8)),
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(22, 14, 22, 28),
@@ -245,18 +274,38 @@ class _DashboardPageState extends State<DashboardPage> {
       child: Column(
         children: [
           const SizedBox(height: 20),
-          const CircleAvatar(
+          CircleAvatar(
             radius: 50,
             backgroundColor: AppColors.hero,
-            child: Icon(Icons.person_rounded, size: 50, color: Colors.white),
+            backgroundImage: _userAvatarUrl != null && _userAvatarUrl!.isNotEmpty 
+              ? NetworkImage(_userAvatarUrl!.startsWith('http') ? _userAvatarUrl! : '${ApiService.baseUrl}$_userAvatarUrl') 
+              : null,
+            child: _userAvatarUrl == null || _userAvatarUrl!.isEmpty 
+              ? const Icon(Icons.person_rounded, size: 50, color: Colors.white) 
+              : null,
           ),
           const SizedBox(height: 16),
           Text(_userName, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.text1)),
           Text(_userEmail, style: const TextStyle(fontSize: 14, color: AppColors.text3)),
-          const SizedBox(height: 40),
-          _buildMenuTile(Icons.history_rounded, 'Riwayat Konsultasi'),
-          _buildMenuTile(Icons.settings_outlined, 'Pengaturan Akun'),
-          _buildMenuTile(Icons.help_outline_rounded, 'Pusat Bantuan'),
+          const SizedBox(height: 24),
+          // User Stats
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _buildStatCard('Level', '$_userLevel'),
+              const SizedBox(width: 16),
+              _buildStatCard('EXP', '$_userExp'),
+            ],
+          ),
+          const SizedBox(height: 32),
+          _buildMenuTile(Icons.history_rounded, 'Riwayat Konsultasi', onTap: () {}),
+          _buildMenuTile(Icons.settings_outlined, 'Pengaturan Akun', onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => EditProfilePage(onProfileUpdated: _loadUserData)),
+            );
+          }),
+          _buildMenuTile(Icons.help_outline_rounded, 'Pusat Bantuan', onTap: () {}),
           const Spacer(),
           SizedBox(
             width: double.infinity,
@@ -277,7 +326,24 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
-  Widget _buildMenuTile(IconData icon, String title) {
+  Widget _buildStatCard(String label, String value) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      decoration: BoxDecoration(
+        color: AppColors.accentBg.withOpacity(0.5),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.hero.withOpacity(0.2)),
+      ),
+      child: Column(
+        children: [
+          Text(value, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.hero)),
+          Text(label, style: const TextStyle(fontSize: 11, color: AppColors.text2, fontWeight: FontWeight.w500)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMenuTile(IconData icon, String title, {required VoidCallback onTap}) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
@@ -289,7 +355,7 @@ class _DashboardPageState extends State<DashboardPage> {
         leading: Icon(icon, color: AppColors.hero),
         title: Text(title, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
         trailing: const Icon(Icons.chevron_right_rounded, size: 20, color: AppColors.text3),
-        onTap: () {},
+        onTap: onTap,
       ),
     );
   }
@@ -320,11 +386,18 @@ class _DashboardPageState extends State<DashboardPage> {
             Text('Halo, $_userName', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: AppColors.text1, letterSpacing: -0.5)),
           ],
         ),
-        Container(
-          width: 44,
-          height: 44,
-          decoration: const BoxDecoration(color: AppColors.accentBg, shape: BoxShape.circle),
-          child: const Icon(Icons.notifications_none_rounded, color: AppColors.hero, size: 24),
+        GestureDetector(
+          onTap: () => setState(() => _selectedIndex = 4), // Go to profile
+          child: CircleAvatar(
+            radius: 22,
+            backgroundColor: AppColors.accentBg,
+            backgroundImage: _userAvatarUrl != null && _userAvatarUrl!.isNotEmpty 
+              ? NetworkImage(_userAvatarUrl!.startsWith('http') ? _userAvatarUrl! : '${ApiService.baseUrl}$_userAvatarUrl') 
+              : null,
+            child: _userAvatarUrl == null || _userAvatarUrl!.isEmpty 
+              ? const Icon(Icons.person_rounded, color: AppColors.hero, size: 24) 
+              : null,
+          ),
         ),
       ],
     );
@@ -386,10 +459,13 @@ class _DashboardPageState extends State<DashboardPage> {
           const SizedBox(height: 8),
           const Text('Mulai curhat\nsekarang', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800, color: Colors.white, height: 1.2, letterSpacing: -0.5)),
           const SizedBox(height: 18),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-            decoration: BoxDecoration(color: Colors.white.withOpacity(0.15), borderRadius: BorderRadius.circular(30), border: Border.all(color: Colors.white.withOpacity(0.4), width: 1)),
-            child: const Row(mainAxisSize: MainAxisSize.min, children: [Text('Mulai sesi', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white)), SizedBox(width: 6), Icon(Icons.arrow_forward_rounded, size: 14, color: Colors.white)]),
+          GestureDetector(
+            onTap: () => setState(() => _selectedIndex = 5),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+              decoration: BoxDecoration(color: Colors.white.withOpacity(0.15), borderRadius: BorderRadius.circular(30), border: Border.all(color: Colors.white.withOpacity(0.4), width: 1)),
+              child: const Row(mainAxisSize: MainAxisSize.min, children: [Text('Mulai sesi', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white)), SizedBox(width: 6), Icon(Icons.arrow_forward_rounded, size: 14, color: Colors.white)]),
+            ),
           ),
         ],
       ),
@@ -442,7 +518,17 @@ class _DashboardPageState extends State<DashboardPage> {
       itemBuilder: (context, i) {
         final item = _layanan[i];
         return GestureDetector(
-          onTap: i == 2 ? () => setState(() => _selectedIndex = 2) : null,
+          onTap: () {
+            if (i == 0) {
+              setState(() => _selectedIndex = 5);
+            } else if (i == 1) {
+              setState(() => _selectedIndex = 6);
+            } else if (i == 2) {
+              setState(() => _selectedIndex = 2);
+            } else if (i == 3) {
+              setState(() => _selectedIndex = 7);
+            }
+          },
           child: Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(color: AppColors.card, borderRadius: BorderRadius.circular(16), border: Border.all(color: AppColors.border2, width: 0.5)),
@@ -521,26 +607,29 @@ class _DashboardPageState extends State<DashboardPage> {
       children: articles.map((a) {
         return Padding(
           padding: const EdgeInsets.only(bottom: 12),
-          child: Container(
-            decoration: BoxDecoration(color: AppColors.card, borderRadius: BorderRadius.circular(16), border: Border.all(color: AppColors.border2, width: 0.5)),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(height: 100, width: double.infinity, decoration: const BoxDecoration(color: AppColors.accentBg, borderRadius: BorderRadius.vertical(top: Radius.circular(16))), child: const Center(child: Icon(Icons.image_outlined, size: 32, color: AppColors.hero))),
-                Padding(
-                  padding: const EdgeInsets.all(14),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3), decoration: BoxDecoration(color: a.categoryBg, borderRadius: BorderRadius.circular(20)), child: Text(a.category.toUpperCase(), style: TextStyle(fontSize: 9, fontWeight: FontWeight.w700, color: a.categoryColor, letterSpacing: 0.6))),
-                      const SizedBox(height: 8),
-                      Text(a.title, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.text1, height: 1.4)),
-                      const SizedBox(height: 6),
-                      Row(children: [Text(a.readTime, style: const TextStyle(fontSize: 11, color: AppColors.text3)), const Text(' · ', style: TextStyle(color: AppColors.text3)), Text(a.timeAgo, style: const TextStyle(fontSize: 11, color: AppColors.text3))]),
-                    ],
+          child: GestureDetector(
+            onTap: () => setState(() => _selectedIndex = 8),
+            child: Container(
+              decoration: BoxDecoration(color: AppColors.card, borderRadius: BorderRadius.circular(16), border: Border.all(color: AppColors.border2, width: 0.5)),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(height: 100, width: double.infinity, decoration: const BoxDecoration(color: AppColors.accentBg, borderRadius: BorderRadius.vertical(top: Radius.circular(16))), child: const Center(child: Icon(Icons.image_outlined, size: 32, color: AppColors.hero))),
+                  Padding(
+                    padding: const EdgeInsets.all(14),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3), decoration: BoxDecoration(color: a.categoryBg, borderRadius: BorderRadius.circular(20)), child: Text(a.category.toUpperCase(), style: TextStyle(fontSize: 9, fontWeight: FontWeight.w700, color: a.categoryColor, letterSpacing: 0.6))),
+                        const SizedBox(height: 8),
+                        Text(a.title, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.text1, height: 1.4)),
+                        const SizedBox(height: 6),
+                        Row(children: [Text(a.readTime, style: const TextStyle(fontSize: 11, color: AppColors.text3)), const Text(' · ', style: TextStyle(color: AppColors.text3)), Text(a.timeAgo, style: const TextStyle(fontSize: 11, color: AppColors.text3))]),
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         );

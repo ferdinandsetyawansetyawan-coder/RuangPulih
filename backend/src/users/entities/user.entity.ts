@@ -14,8 +14,17 @@ export class User {
   @Column({ nullable: true })
   fullName: string;
 
+  @Column({ nullable: true })
+  avatarUrl: string;
+
   @Column({ default: true })
   isActive: boolean;
+
+  @Column({ default: 1 })
+  level: number;
+
+  @Column({ default: 0 })
+  exp: number;
 
   @CreateDateColumn()
   createdAt: Date;

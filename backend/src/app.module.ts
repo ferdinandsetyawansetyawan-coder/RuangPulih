@@ -1,17 +1,26 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { ServeStaticModule } from '@nestjs/serve-static';
+import { join } from 'path';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { ActivityLogsModule } from './activity-logs/activity-logs.module';
 import { MoodsModule } from './moods/moods.module';
+import { ForumModule } from './forum/forum.module';
+import { JournalsModule } from './journals/journals.module';
+import { HabitsModule } from './habits/habits.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
+    }),
+    ServeStaticModule.forRoot({
+      rootPath: join(__dirname, '..', 'uploads'),
+      serveRoot: '/uploads',
     }),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
@@ -31,6 +40,9 @@ import { MoodsModule } from './moods/moods.module';
     AuthModule,
     ActivityLogsModule,
     MoodsModule,
+    ForumModule,
+    JournalsModule,
+    HabitsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

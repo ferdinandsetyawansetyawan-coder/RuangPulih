@@ -27,7 +27,26 @@ export class UsersService {
     return this.usersRepository.save(user);
   }
 
+  async update(id: number, userData: Partial<User>): Promise<User | null> {
+    await this.usersRepository.update(id, userData);
+    return this.findOne(id);
+  }
+
   async remove(id: number): Promise<void> {
     await this.usersRepository.delete(id);
+  }
+
+  async addExp(id: number, amount: number): Promise<User | null> {
+    const user = await this.findOne(id);
+    if (!user) return null;
+
+    user.exp += amount;
+    // Simple level up logic: 100 XP per level
+    const newLevel = Math.floor(user.exp / 100) + 1;
+    if (newLevel > user.level) {
+      user.level = newLevel;
+    }
+
+    return this.usersRepository.save(user);
   }
 }

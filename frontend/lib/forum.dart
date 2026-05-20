@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'api_service.dart';
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:http/http.dart' as http;
 
 // Warna utama
 class AppColors {
@@ -17,22 +21,52 @@ class ForumPost {
   final String id;
   final String category;
   final String content;
+  final String authorName;
+  final bool isAnonymous;
   int likes;
   int comments;
-  final String timeAgo;
+  final DateTime createdAt;
   bool isLiked;
+  bool isSaved;
   final bool isOwnPost;
 
   ForumPost({
     required this.id,
     required this.category,
     required this.content,
+    required this.authorName,
+    required this.isAnonymous,
     required this.likes,
     required this.comments,
-    required this.timeAgo,
+    required this.createdAt,
     this.isLiked = false,
+    this.isSaved = false,
     this.isOwnPost = false,
   });
+
+  factory ForumPost.fromJson(Map<String, dynamic> json, int? currentUserId) {
+    return ForumPost(
+      id: json['id'].toString(),
+      category: json['category'],
+      content: json['content'],
+      authorName: json['user']?['fullName'] ?? 'Anonim',
+      isAnonymous: json['isAnonymous'] ?? false,
+      likes: int.tryParse(json['likes'].toString()) ?? 0,
+      comments: int.tryParse(json['comments'].toString()) ?? 0,
+      createdAt: DateTime.parse(json['createdAt']),
+      isLiked: json['isLiked'] ?? false,
+      isSaved: json['isSaved'] ?? false,
+      isOwnPost: json['userId'] == currentUserId,
+    );
+  }
+
+  String get timeAgo {
+    final diff = DateTime.now().difference(createdAt);
+    if (diff.inMinutes < 1) return 'Baru saja';
+    if (diff.inMinutes < 60) return '${diff.inMinutes} mnt lalu';
+    if (diff.inHours < 24) return '${diff.inHours} jam lalu';
+    return '${diff.inDays} hari lalu';
+  }
 }
 
 class ForumPage extends StatefulWidget {
@@ -45,69 +79,227 @@ class ForumPage extends StatefulWidget {
 class _ForumPageState extends State<ForumPage> with TickerProviderStateMixin {
   final _searchCtrl = TextEditingController();
   late TabController _tabController;
+  bool _isLoading = false;
+  int? _currentUserId;
 
   final List<String> _categories = [
-    'Semua', 'Curhat', 'Tips', 'Pertanyaan', 'Motivasi', 'Pengalaman'
+    'Semua', 'Tersimpan', 'Curhat', 'Tips', 'Pertanyaan', 'Motivasi', 'Pengalaman'
   ];
 
-  late List<ForumPost> _posts;
+  List<ForumPost> _posts = [];
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: _categories.length, vsync: this);
-    _posts = _samplePosts();
+    _tabController.addListener(() {
+      if (!_tabController.indexIsChanging) {
+        _fetchPosts();
+      }
+    });
+    _loadUserAndFetch();
   }
 
-  List<ForumPost> _samplePosts() {
-    return [
-      ForumPost(
-        id: '1',
-        category: 'Curhat',
-        content: 'Hari ini aku ngerasa overwhelmed banget sama kerjaan. Rasanya semua deadline dateng bareng dan aku nggak tau harus mulai dari mana... Ada yang pernah ngalamin hal yang sama?',
-        likes: 42,
-        comments: 8,
-        timeAgo: '2 jm lalu',
-        isLiked: false,
-      ),
-      ForumPost(
-        id: '2',
-        category: 'Motivasi',
-        content: 'Gapapa nangis, itu bukan kelemahan, itu keberanian. Kamu sudah berjuang jauh lebih keras dari yang orang lain tahu. Tetap semangat ya semuanya 💚',
-        likes: 125,
-        comments: 23,
-        timeAgo: '5 jm lalu',
-        isLiked: true,
-      ),
-      ForumPost(
-        id: '3',
-        category: 'Pertanyaan',
-        content: 'Tips buat anxiety saat presentasi? Aku udah coba tarik napas tapi tetep gemetar terus. Butuh saran dari teman-teman di sini 🙏',
-        likes: 19,
-        comments: 31,
-        timeAgo: '1 hr lalu',
-        isLiked: false,
-      ),
-      ForumPost(
-        id: '4',
-        category: 'Tips',
-        content: 'Setelah 6 bulan terapi, aku mau share beberapa hal yang benar-benar bantu aku:\n\n1. Journaling setiap malam\n2. Batasi social media jam 9 malam\n3. Cerita ke orang yang kamu percaya\n\nSemoga membantu!',
-        likes: 88,
-        comments: 14,
-        timeAgo: '2 hr lalu',
-        isLiked: false,
-      ),
-      ForumPost(
-        id: '5',
-        category: 'Pengalaman',
-        content: 'Baru pertama kali konsultasi sama psikolog minggu lalu. Awalnya takut banget, tapi ternyata aman dan judgement-free. Kalau kalian ragu-ragu, coba aja dulu, worth it banget!',
-        likes: 67,
-        comments: 19,
-        timeAgo: '3 hr lalu',
-        isLiked: false,
-      ),
-    ];
+  Future<void> _loadUserAndFetch() async {
+    final prefs = await SharedPreferences.getInstance();
+    final userDataStr = prefs.getString('user_data');
+    if (userDataStr != null) {
+      final userData = jsonDecode(userDataStr);
+      _currentUserId = userData['id'];
+    }
+    _fetchPosts();
   }
+
+  Future<void> _fetchPosts() async {
+    if (!mounted) return;
+    setState(() => _isLoading = true);
+    try {
+      final category = _categories[_tabController.index];
+      final response = await ApiService.get('/forum?category=$category&type=anonymous&userId=$_currentUserId');
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+        if (mounted) {
+          setState(() {
+            _posts = data.map((json) => ForumPost.fromJson(json, _currentUserId)).toList();
+          });
+        }
+      } else if (response.statusCode == 401) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Sesi telah berakhir. Silakan login kembali.')),
+          );
+        }
+      }
+    } catch (e) {
+      // Error handled silently
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _createPost(String category, String content) async {
+    if (_currentUserId == null) return;
+    try {
+      final response = await ApiService.post('/forum', {
+        'userId': _currentUserId,
+        'category': category,
+        'content': content,
+        'isAnonymous': true,
+      });
+      if (response.statusCode == 201) {
+        await _fetchPosts();
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Gagal membuat postingan: ${response.statusCode}')),
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint('Error creating post: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Terjadi kesalahan: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _toggleLike(ForumPost post) async {
+    if (_currentUserId == null) return;
+    try {
+      final response = await ApiService.post('/forum/${post.id}/like', {'userId': _currentUserId});
+      if (response.statusCode == 201) {
+        final data = jsonDecode(response.body);
+        setState(() {
+          post.isLiked = data['liked'];
+          post.likes += post.isLiked ? 1 : -1;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error liking post: $e');
+    }
+  }
+
+  Future<void> _toggleSave(ForumPost post) async {
+    if (_currentUserId == null) return;
+    try {
+      final response = await ApiService.post('/forum/${post.id}/save', {'userId': _currentUserId});
+      if (response.statusCode == 201) {
+        final data = jsonDecode(response.body);
+        setState(() {
+          post.isSaved = data['saved'];
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(post.isSaved ? 'Berhasil disimpan' : 'Batal disimpan')),
+        );
+      }
+    } catch (e) {
+      debugPrint('Error saving post: $e');
+    }
+  }
+
+  void _openCommentSheet(ForumPost post) {
+    final commentCtrl = TextEditingController();
+    bool isPosting = false;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setModal) => DraggableScrollableSheet(
+          initialChildSize: 0.8,
+          maxChildSize: 0.95,
+          minChildSize: 0.5,
+          builder: (ctx, scrollCtrl) => Container(
+            decoration: const BoxDecoration(color: AppColors.card, borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+            padding: const EdgeInsets.fromLTRB(20, 14, 20, 20),
+            child: Column(
+              children: [
+                Container(width: 38, height: 4, decoration: BoxDecoration(color: AppColors.border2, borderRadius: BorderRadius.circular(2))),
+                const SizedBox(height: 16),
+                const Text('Balasan', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.text1)),
+                const SizedBox(height: 20),
+                Expanded(
+                  child: FutureBuilder<http.Response>(
+                    future: ApiService.get('/forum/${post.id}/comments'),
+                    builder: (ctx, snapshot) {
+                      if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+                      final List<dynamic> comments = jsonDecode(snapshot.data!.body);
+                      if (comments.isEmpty) return const Center(child: Text('Belum ada balasan', style: TextStyle(color: AppColors.text3)));
+                      return ListView.builder(
+                        controller: scrollCtrl,
+                        itemCount: comments.length,
+                        itemBuilder: (ctx, i) {
+                          final c = comments[i];
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 16),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _buildAnonAvatar(32),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text('Anonim', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
+                                      const SizedBox(height: 4),
+                                      Text(c['content'], style: const TextStyle(fontSize: 13, color: AppColors.text2, height: 1.4)),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      );
+                    },
+                  ),
+                ),
+                const Divider(height: 32),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: commentCtrl,
+                        decoration: InputDecoration(
+                          hintText: 'Tulis balasan...',
+                          filled: true,
+                          fillColor: AppColors.bg,
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(20), borderSide: BorderSide.none),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    IconButton(
+                      onPressed: isPosting ? null : () async {
+                        final text = commentCtrl.text.trim();
+                        if (text.isEmpty) return;
+                        setModal(() => isPosting = true);
+                        await ApiService.post('/forum/${post.id}/comments', {
+                          'userId': _currentUserId,
+                          'content': text,
+                        });
+                        commentCtrl.clear();
+                        setState(() => post.comments++);
+                        setModal(() => isPosting = false);
+                      },
+                      icon: Icon(Icons.send_rounded, color: AppColors.hero),
+                    ),
+                  ],
+                ),
+                SizedBox(height: MediaQuery.of(ctx).viewInsets.bottom),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
 
   @override
   void dispose() {
@@ -117,12 +309,10 @@ class _ForumPageState extends State<ForumPage> with TickerProviderStateMixin {
   }
 
   List<ForumPost> get _filteredPosts {
-    final selectedCat = _categories[_tabController.index];
     final query = _searchCtrl.text.toLowerCase().trim();
+    if (query.isEmpty) return _posts;
     return _posts.where((p) {
-      final matchCat = selectedCat == 'Semua' || p.category == selectedCat;
-      final matchQuery = query.isEmpty || p.content.toLowerCase().contains(query);
-      return matchCat && matchQuery;
+      return p.content.toLowerCase().contains(query);
     }).toList();
   }
 
@@ -180,7 +370,7 @@ class _ForumPageState extends State<ForumPage> with TickerProviderStateMixin {
                   SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
                     child: Row(
-                      children: _categories.skip(1).map((cat) {
+                      children: _categories.where((cat) => cat != 'Semua' && cat != 'Tersimpan').map((cat) {
                         final isSelected = selectedCategory == cat;
                         return GestureDetector(
                           onTap: () => setModalState(() => selectedCategory = cat),
@@ -226,13 +416,11 @@ class _ForumPageState extends State<ForumPage> with TickerProviderStateMixin {
                     width: double.infinity,
                     height: 50,
                     child: ElevatedButton(
-                      onPressed: () {
+                      onPressed: () async {
                         final text = ctrl.text.trim();
                         if (text.isNotEmpty) {
-                          setState(() {
-                            _posts.insert(0, ForumPost(id: DateTime.now().millisecondsSinceEpoch.toString(), category: selectedCategory, content: text, likes: 0, comments: 0, timeAgo: 'Baru saja', isLiked: false, isOwnPost: true));
-                          });
                           Navigator.pop(ctx);
+                          await _createPost(selectedCategory, text);
                         }
                       },
                       style: ElevatedButton.styleFrom(backgroundColor: AppColors.hero, foregroundColor: Colors.white, elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
@@ -257,12 +445,17 @@ class _ForumPageState extends State<ForumPage> with TickerProviderStateMixin {
             _buildHeader(),
             _buildSearchBar(),
             _buildCategoryTabs(),
+            if (_isLoading) 
+              const Padding(
+                padding: EdgeInsets.only(top: 20),
+                child: Center(child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(AppColors.hero))),
+              ),
             Expanded(
               child: AnimatedBuilder(
                 animation: _tabController,
                 builder: (_, __) {
                   final posts = _filteredPosts;
-                  if (posts.isEmpty) return _buildEmptyState();
+                  if (posts.isEmpty && !_isLoading) return _buildEmptyState();
                   return ListView.builder(
                     padding: const EdgeInsets.fromLTRB(18, 6, 18, 100),
                     itemCount: posts.length,
@@ -408,11 +601,28 @@ class _ForumPageState extends State<ForumPage> with TickerProviderStateMixin {
             const SizedBox(height: 12),
             Row(
               children: [
-                _buildActionButton(icon: post.isLiked ? Icons.favorite_rounded : Icons.favorite_border_rounded, label: '${post.likes}', color: post.isLiked ? const Color(0xFFD96B6B) : AppColors.text3, onTap: () => setState(() { post.isLiked = !post.isLiked; post.likes += post.isLiked ? 1 : -1; })),
+                _buildActionButton(
+                  icon: post.isLiked ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                  label: '${post.likes}',
+                  color: post.isLiked ? const Color(0xFFD96B6B) : AppColors.text3,
+                  onTap: () => _toggleLike(post),
+                ),
                 const SizedBox(width: 18),
-                _buildActionButton(icon: Icons.chat_bubble_outline_rounded, label: '${post.comments} balasan', color: AppColors.text3, onTap: () {}),
+                _buildActionButton(
+                  icon: Icons.chat_bubble_outline_rounded,
+                  label: '${post.comments} balasan',
+                  color: AppColors.text3,
+                  onTap: () => _openCommentSheet(post),
+                ),
                 const Spacer(),
-                const Icon(Icons.bookmark_border_rounded, size: 18, color: AppColors.text3),
+                GestureDetector(
+                  onTap: () => _toggleSave(post),
+                  child: Icon(
+                    post.isSaved ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
+                    size: 18,
+                    color: post.isSaved ? AppColors.hero : AppColors.text3,
+                  ),
+                ),
               ],
             ),
           ],

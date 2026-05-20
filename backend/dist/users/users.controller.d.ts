@@ -6,5 +6,7 @@ export declare class UsersController {
     create(userData: Partial<User>): Promise<User>;
     findAll(): Promise<User[]>;
     findOne(id: string): Promise<User | null>;
+    update(id: string, userData: Partial<User>): Promise<User | null>;
+    uploadAvatar(id: string, file: Express.Multer.File): Promise<User | null>;
     remove(id: string): Promise<void>;
 }

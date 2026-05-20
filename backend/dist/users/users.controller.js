@@ -14,6 +14,10 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.UsersController = void 0;
 const common_1 = require("@nestjs/common");
+const platform_express_1 = require("@nestjs/platform-express");
+const multer_1 = require("multer");
+const path_1 = require("path");
+const uuid_1 = require("uuid");
 const users_service_1 = require("./users.service");
 let UsersController = class UsersController {
     usersService;
@@ -28,6 +32,15 @@ let UsersController = class UsersController {
     }
     findOne(id) {
         return this.usersService.findOne(+id);
+    }
+    update(id, userData) {
+        return this.usersService.update(+id, userData);
+    }
+    async uploadAvatar(id, file) {
+        if (!file)
+            throw new common_1.BadRequestException('No file uploaded');
+        const avatarUrl = `/uploads/avatars/${file.filename}`;
+        return this.usersService.update(+id, { avatarUrl });
     }
     remove(id) {
         return this.usersService.remove(+id);
@@ -54,6 +67,31 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], UsersController.prototype, "findOne", null);
+__decorate([
+    (0, common_1.Post)(':id'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", Promise)
+], UsersController.prototype, "update", null);
+__decorate([
+    (0, common_1.Post)(':id/avatar'),
+    (0, common_1.UseInterceptors)((0, platform_express_1.FileInterceptor)('avatar', {
+        storage: (0, multer_1.diskStorage)({
+            destination: './uploads/avatars',
+            filename: (req, file, cb) => {
+                const randomName = (0, uuid_1.v4)();
+                return cb(null, `${randomName}${(0, path_1.extname)(file.originalname)}`);
+            }
+        })
+    })),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.UploadedFile)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", Promise)
+], UsersController.prototype, "uploadAvatar", null);
 __decorate([
     (0, common_1.Delete)(':id'),
     __param(0, (0, common_1.Param)('id')),

@@ -3,7 +3,10 @@ export declare class User {
     email: string;
     password: string;
     fullName: string;
+    avatarUrl: string;
     isActive: boolean;
+    level: number;
+    exp: number;
     createdAt: Date;
     updatedAt: Date;
 }

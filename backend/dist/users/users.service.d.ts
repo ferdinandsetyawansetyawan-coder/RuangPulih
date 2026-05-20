@@ -7,5 +7,7 @@ export declare class UsersService {
     findOne(id: number): Promise<User | null>;
     findByEmail(email: string): Promise<User | null>;
     create(userData: Partial<User>): Promise<User>;
+    update(id: number, userData: Partial<User>): Promise<User | null>;
     remove(id: number): Promise<void>;
+    addExp(id: number, amount: number): Promise<User | null>;
 }
