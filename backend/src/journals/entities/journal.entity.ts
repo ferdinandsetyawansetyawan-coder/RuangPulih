@@ -25,7 +25,7 @@ export class Journal {
   moodLabel: string;
 
   @Column({ nullable: true })
-  toneTag: string;
+  aiFeedback: string;
 
   @CreateDateColumn()
   createdAt: Date;

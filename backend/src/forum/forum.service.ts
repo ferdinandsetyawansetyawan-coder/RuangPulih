@@ -32,13 +32,17 @@ export class ForumService {
     return this.forumRepository.save(post);
   }
 
-  async findAll(userId?: number, category?: string, type?: string) {
+  async findAll(userId?: number, category?: string, type?: string, authorId?: number) {
     const query = this.forumRepository
       .createQueryBuilder('post')
       .leftJoinAndSelect('post.user', 'user')
       .loadRelationCountAndMap('post.likes', 'post.likesList')
       .loadRelationCountAndMap('post.comments', 'post.commentsList')
       .orderBy('post.createdAt', 'DESC');
+
+    if (authorId) {
+      query.andWhere('post.userId = :authorId', { authorId });
+    }
 
     if (category && category !== 'Semua' && category !== 'Tersimpan') {
       query.andWhere('post.category = :category', { category });

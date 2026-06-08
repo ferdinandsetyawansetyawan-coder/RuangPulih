@@ -148,8 +148,21 @@ class _HabitTrackerPageState extends State<HabitTrackerPage>
 
   Future<void> _toggleHabit(int index) async {
     if (_userId == null) return;
-    HapticFeedback.lightImpact();
+    
     final habit = _habits[index];
+    
+    // Mencegah uncheck jika sudah selesai hari ini
+    if (habit.completedToday) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Hebat! Kebiasaan ini sudah selesai untuk hari ini 👏'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+
+    HapticFeedback.lightImpact();
     
     try {
       final response = await ApiService.post('/habits/${habit.id}/toggle', {
@@ -946,10 +959,18 @@ class _HabitCard extends StatelessWidget {
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
                         color: habit.completedToday ? AppColors.hero : AppColors.text1,
+                        decoration: habit.completedToday ? TextDecoration.lineThrough : null,
                       ),
                     ),
                     const SizedBox(height: 3),
-                    Text(habit.subtitle, style: const TextStyle(fontSize: 11, color: AppColors.text3)),
+                    Text(
+                      habit.subtitle, 
+                      style: TextStyle(
+                        fontSize: 11, 
+                        color: AppColors.text3,
+                        decoration: habit.completedToday ? TextDecoration.lineThrough : null,
+                      )
+                    ),
                   ],
                 ),
               ),

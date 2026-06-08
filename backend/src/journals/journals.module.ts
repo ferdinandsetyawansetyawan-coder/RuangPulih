@@ -3,10 +3,11 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { JournalsController } from './journals.controller';
 import { JournalsService } from './journals.service';
 import { Journal } from './entities/journal.entity';
+import { GeminiService } from './gemini.service';
 
 @Module({
   imports: [TypeOrmModule.forFeature([Journal])],
   controllers: [JournalsController],
-  providers: [JournalsService],
+  providers: [JournalsService, GeminiService],
 })
 export class JournalsModule {}

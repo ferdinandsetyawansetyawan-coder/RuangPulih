@@ -10,6 +10,7 @@ import 'habit_tracker.dart';
 import 'artikel_untukmu.dart';
 import 'edit_profile.dart';
 import 'api_service.dart';
+import 'aktivitas.dart';
 
 // Warna utama
 class AppColors {
@@ -195,7 +196,7 @@ class _DashboardPageState extends State<DashboardPage> {
       case 0: return _buildBerandaTab();
       case 1: return _buildPlaceholderTab('Sesi Konsultasi');
       case 2: return const ForumPage();
-      case 3: return _buildPlaceholderTab('Aktifitas Kamu');
+      case 3: return const AktivitasPage();
       case 4: return _buildProfilTab();
       case 5: return CurhatBebasPage(onBack: () {
         _loadUserData();

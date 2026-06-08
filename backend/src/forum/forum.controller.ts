@@ -37,11 +37,13 @@ export class ForumController {
     @Query('category') category?: string,
     @Query('type') type?: string,
     @Query('userId') userId?: string,
+    @Query('authorId') authorId?: string,
   ) {
     return this.forumService.findAll(
       userId ? +userId : undefined,
       category,
       type,
+      authorId ? +authorId : undefined,
     );
   }
 

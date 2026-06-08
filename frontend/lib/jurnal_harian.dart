@@ -24,8 +24,7 @@ class JurnalEntry {
   final DateTime date;
   final String moodEmoji;   // e.g. "😊"
   final String moodLabel;   // e.g. "Baik"
-  String toneTag;           // AI-generated e.g. "Tenang 🌿"
-  final Color toneColor;    // subtle background for the tag
+  String aiFeedback;        // AI-generated encouragement
 
   JurnalEntry({
     required this.id,
@@ -34,12 +33,11 @@ class JurnalEntry {
     required this.date,
     required this.moodEmoji,
     required this.moodLabel,
-    this.toneTag = '',
-    required this.toneColor,
+    this.aiFeedback = '',
   });
 
   factory JurnalEntry.fromJson(Map<String, dynamic> json) {
-    final tag = json['toneTag'] ?? '';
+    final feedback = json['aiFeedback'] ?? '';
     return JurnalEntry(
       id: json['id'].toString(),
       title: json['title'],
@@ -47,27 +45,9 @@ class JurnalEntry {
       date: DateTime.parse(json['createdAt']),
       moodEmoji: json['moodEmoji'],
       moodLabel: json['moodLabel'],
-      toneTag: tag,
-      toneColor: _getToneColor(tag),
+      aiFeedback: feedback,
     );
   }
-}
-
-Color _getToneColor(String tag) {
-  if (tag.contains('Tenang')) return const Color(0xFFE4F0EB);
-  if (tag.contains('Berat')) return const Color(0xFFE8EDF5);
-  if (tag.contains('Bersyukur')) return const Color(0xFFFAF3E0);
-  if (tag.contains('Cemas')) return const Color(0xFFF5EAE4);
-  if (tag.contains('Semangat')) return const Color(0xFFEFF5E4);
-  if (tag.contains('Sedih')) return const Color(0xFFEEEEF3);
-  return const Color(0xFFEDE9E1);
-}
-
-// ─── Tone metadata ────────────────────────────────────────────────────────────
-class _ToneMeta {
-  final String tag;
-  final Color color;
-  const _ToneMeta(this.tag, this.color);
 }
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
@@ -128,8 +108,8 @@ class _JurnalHarianPageState extends State<JurnalHarianPage>
     }
   }
 
-  Future<void> _createEntry(String title, String content, String moodEmoji, String moodLabel, String toneTag) async {
-    if (_userId == null) return;
+  Future<JurnalEntry?> _createEntry(String title, String content, String moodEmoji, String moodLabel, String aiFeedback) async {
+    if (_userId == null) return null;
     try {
       final response = await ApiService.post('/journals', {
         'userId': _userId,
@@ -137,18 +117,22 @@ class _JurnalHarianPageState extends State<JurnalHarianPage>
         'content': content,
         'moodEmoji': moodEmoji,
         'moodLabel': moodLabel,
-        'toneTag': toneTag,
+        'aiFeedback': aiFeedback,
       });
       if (response.statusCode == 201) {
+        final data = jsonDecode(response.body);
+        final entry = JurnalEntry.fromJson(data);
         _fetchEntries();
+        return entry;
       }
     } catch (e) {
-      // Create error ignored
+      debugPrint('Create entry error: $e');
     }
+    return null;
   }
 
-  Future<void> _updateEntry(String id, String title, String content, String moodEmoji, String moodLabel, String toneTag) async {
-    if (_userId == null) return;
+  Future<JurnalEntry?> _updateEntry(String id, String title, String content, String moodEmoji, String moodLabel, String aiFeedback) async {
+    if (_userId == null) return null;
     try {
       final response = await ApiService.put('/journals/$id', {
         'userId': _userId,
@@ -156,14 +140,18 @@ class _JurnalHarianPageState extends State<JurnalHarianPage>
         'content': content,
         'moodEmoji': moodEmoji,
         'moodLabel': moodLabel,
-        'toneTag': toneTag,
+        'aiFeedback': aiFeedback,
       });
       if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final entry = JurnalEntry.fromJson(data);
         _fetchEntries();
+        return entry;
       }
     } catch (e) {
-      // Update error ignored
+      debugPrint('Update entry error: $e');
     }
+    return null;
   }
 
   Future<void> _deleteEntry(String id) async {
@@ -179,84 +167,6 @@ class _JurnalHarianPageState extends State<JurnalHarianPage>
   }
 
   // ─── AI Tone Analysis via Anthropic ────────────────────────────────────────
-
-  // ─── Analisis Nada Lokal (keyword matching) ──────────────────────────────────
-  //
-  // Cara kerja:
-  //  1. Teks di-lowercase
-  //  2. Tiap kategori punya daftar kata kunci bahasa Indonesia
-  //  3. Hitung berapa kata kunci yang cocok per kategori
-  //  4. Kategori dengan skor tertinggi menang
-  //  5. Seri / tidak ada yang cocok → "Campur aduk 🌊"
-  //
-  Future<_ToneMeta> _analyzeTone(String text) async {
-    final lower = text.toLowerCase();
-
-    final Map<String, List<String>> keywords = {
-      'Tenang 🌿': [
-        'tenang', 'damai', 'nyaman', 'rileks', 'santai', 'aman', 'adem',
-        'istirahat', 'tidur', 'rehat', 'kalem', 'hening', 'sepi', 'sunyi',
-        'diam', 'duduk', 'napas', 'nafas', 'slow', 'pelan',
-      ],
-      'Berat 🌧': [
-        'berat', 'lelah', 'capek', 'penat', 'overwhelmed', 'tekanan',
-        'beban', 'sulit', 'susah', 'payah', 'nggak kuat', 'tidak kuat',
-        'deadline', 'numpuk', 'menumpuk', 'melelahkan', 'kewalahan',
-        'terpuruk', 'tertekan', 'burnout', 'exhausted',
-      ],
-      'Bersyukur ☀️': [
-        'syukur', 'bersyukur', 'terima kasih', 'makasih', 'beruntung',
-        'lega', 'senang', 'gembira', 'happy', 'suka', 'seru',
-        'menyenangkan', 'indah', 'bagus', 'luar biasa', 'terharu',
-        'bangga', 'hangat', 'berarti', 'bermakna',
-      ],
-      'Cemas 🌀': [
-        'cemas', 'khawatir', 'anxiety', 'gelisah', 'was-was', 'takut',
-        'gugup', 'grogi', 'panik', 'resah', 'tidak tenang', 'nggak tenang',
-        'gemetar', 'deg-degan', 'nervous', 'overthinking', 'ragu', 'bingung', 'galau',
-      ],
-      'Semangat ⚡': [
-        'semangat', 'energi', 'produktif', 'excited', 'antusias',
-        'termotivasi', 'motivasi', 'bisa', 'mampu', 'siap', 'optimis',
-        'berhasil', 'sukses', 'goal', 'target', 'fokus', 'gas', 'yakin', 'percaya diri',
-      ],
-      'Sedih 🌑': [
-        'sedih', 'nangis', 'menangis', 'air mata', 'sakit', 'perih',
-        'kecewa', 'patah hati', 'kehilangan', 'rindu', 'kangen',
-        'hampa', 'kosong', 'sendiri', 'lonely', 'ditinggal', 'gagal', 'menyesal',
-      ],
-    };
-
-    String bestTag = 'Campur aduk 🌊';
-    int bestScore = 0;
-    int categoriesWithScore = 0;
-
-    keywords.forEach((tag, words) {
-      int score = words.where((w) => lower.contains(w)).length;
-      if (score > 0) categoriesWithScore++;
-      if (score > bestScore) {
-        bestScore = score;
-        bestTag = tag;
-      }
-    });
-
-    // Jika skor rendah dan banyak kategori cocok → campur aduk
-    if (bestScore <= 1 && categoriesWithScore >= 2) {
-      bestTag = 'Campur aduk 🌊';
-    }
-
-    return _ToneMeta(bestTag, _colorForTag(bestTag));
-  }
-
-  Color _colorForTag(String tag) {
-    if (tag.contains('Tenang')) return const Color(0xFFE4F0EB);
-    if (tag.contains('Berat')) return const Color(0xFFE8EDF5);
-    if (tag.contains('Bersyukur')) return const Color(0xFFFAF3E0);
-    if (tag.contains('Cemas')) return const Color(0xFFF5EAE4);
-    if (tag.contains('Semangat')) return const Color(0xFFEFF5E4);
-    if (tag.contains('Sedih')) return const Color(0xFFEEEEF3);
-    return const Color(0xFFEDE9E1);
-  }
 
   // ─── Open write dialog ──────────────────────────────────────────────────────
   void _openWriteDialog({JurnalEntry? existing}) {
@@ -452,18 +362,17 @@ class _JurnalHarianPageState extends State<JurnalHarianPage>
                         setState(() => _isLoading = true);
 
                         try {
-                          // AI tone analysis
-                          final tone = await _analyzeTone(content);
-
                           final mood = _moods[selectedMoodIdx];
+                          JurnalEntry? result;
+                          
                           if (existing != null) {
-                            await _updateEntry(existing.id, title, content, mood['emoji']!, mood['label']!, tone.tag);
+                            result = await _updateEntry(existing.id, title, content, mood['emoji']!, mood['label']!, 'Mendapatkan Nasihat...');
                           } else {
-                            await _createEntry(title, content, mood['emoji']!, mood['label']!, tone.tag);
+                            result = await _createEntry(title, content, mood['emoji']!, mood['label']!, 'Mendapatkan Nasihat...');
                           }
 
-                          if (mounted) {
-                            _showToneSnackbar(tone.tag);
+                          if (mounted && result != null) {
+                            _showFeedbackSnackbar(result.aiFeedback);
                           }
                         } catch (e) {
                           debugPrint('Error saving entry: $e');
@@ -471,7 +380,7 @@ class _JurnalHarianPageState extends State<JurnalHarianPage>
                           if (mounted) setState(() => _isLoading = false);
                         }
                       },
-                      child: const Text('Simpan & Analisis Nada',
+                      child: const Text('Simpan & Dapatkan Nasihat AI',
                           style: TextStyle(
                               fontSize: 14, fontWeight: FontWeight.w700)),
                     ),
@@ -485,7 +394,7 @@ class _JurnalHarianPageState extends State<JurnalHarianPage>
     );
   }
 
-  void _showToneSnackbar(String tag) {
+  void _showFeedbackSnackbar(String feedback) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         behavior: SnackBarBehavior.floating,
@@ -493,7 +402,7 @@ class _JurnalHarianPageState extends State<JurnalHarianPage>
         shape:
         RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-        duration: const Duration(seconds: 3),
+        duration: const Duration(seconds: 4),
         content: Row(
           children: [
             const Icon(Icons.auto_awesome_rounded,
@@ -501,7 +410,7 @@ class _JurnalHarianPageState extends State<JurnalHarianPage>
             const SizedBox(width: 8),
             Expanded(
               child: Text(
-                'Nada hari ini terdeteksi: $tag',
+                feedback,
                 style: const TextStyle(
                     fontSize: 13,
                     color: Colors.white,
@@ -722,27 +631,6 @@ class _JurnalHarianPageState extends State<JurnalHarianPage>
                       ],
                     ),
                   ),
-                  // Tone tag (AI)
-                  if (entry.toneTag.isNotEmpty) ...[
-                    const SizedBox(width: 6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: entry.toneColor,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                            color: AppColors.border2, width: 0.5),
-                      ),
-                      child: Text(
-                        entry.toneTag,
-                        style: const TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.text2),
-                      ),
-                    ),
-                  ],
                 ],
               ),
               const SizedBox(height: 10),
@@ -872,29 +760,6 @@ class _JurnalHarianPageState extends State<JurnalHarianPage>
                                   color: AppColors.hero)),
                         ]),
                       ),
-                      if (entry.toneTag.isNotEmpty) ...[
-                        const SizedBox(width: 6),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 3),
-                          decoration: BoxDecoration(
-                            color: entry.toneColor,
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                                color: AppColors.border2, width: 0.5),
-                          ),
-                          child: Row(children: [
-                            const Icon(Icons.auto_awesome_rounded,
-                                size: 10, color: AppColors.text2),
-                            const SizedBox(width: 4),
-                            Text(entry.toneTag,
-                                style: const TextStyle(
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w600,
-                                    color: AppColors.text2)),
-                          ]),
-                        ),
-                      ],
                     ],
                   ),
                   const SizedBox(height: 14),
@@ -921,6 +786,44 @@ class _JurnalHarianPageState extends State<JurnalHarianPage>
                         height: 1.75),
                   ),
                   const SizedBox(height: 28),
+
+                  if (entry.aiFeedback.isNotEmpty) ...[
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: AppColors.accentBg.withOpacity(0.5),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: AppColors.hero.withOpacity(0.1)),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(Icons.auto_awesome_rounded,
+                                  size: 16, color: AppColors.hero),
+                              const SizedBox(width: 8),
+                              const Text('Titik Terang Harimu',
+                                  style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w700,
+                                      color: AppColors.hero)),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            entry.aiFeedback,
+                            style: const TextStyle(
+                                fontSize: 14,
+                                color: AppColors.hero,
+                                height: 1.5,
+                                fontStyle: FontStyle.italic),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 28),
+                  ],
 
                   // Actions
                   Row(

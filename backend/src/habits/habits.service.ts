@@ -95,30 +95,17 @@ export class HabitsService {
 
     let completedToday = false;
     if (completion) {
-      // Untoggling completion
-      await this.completionsRepository.remove(completion);
-      await this.usersService.addExp(userId, -15);
-      completedToday = false;
-
-      // Recalculate streak (check consecutive days backwards from yesterday)
-      let streak = 0;
-      const checkDate = new Date(yesterdayDate);
-      while (true) {
-        const dateStr = checkDate.toISOString().split('T')[0];
-        const c = await this.completionsRepository.findOneBy({
-          habitId: id,
-          date: dateStr,
-        });
-        if (c) {
-          streak++;
-          checkDate.setDate(checkDate.getDate() - 1);
-        } else {
-          break;
-        }
-      }
-      habit.streakDays = streak;
+      // Habit is already completed today, prevent untoggling (uncheck).
+      // Just return the current state.
+      const user = await this.usersService.findOne(userId);
+      return {
+        completedToday: true,
+        streakDays: habit.streakDays,
+        exp: user?.exp ?? 0,
+        level: user?.level ?? 1,
+      };
     } else {
-      // Toggling completion
+      // Toggling completion (checking)
       const newCompletion = this.completionsRepository.create({
         habitId: id,
         date: today,
