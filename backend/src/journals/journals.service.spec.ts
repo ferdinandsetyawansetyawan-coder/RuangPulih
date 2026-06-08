@@ -5,7 +5,7 @@ import { Journal } from './entities/journal.entity';
 
 describe('JournalsService', () => {
   let service: JournalsService;
-  let mockRepository = {
+  const mockRepository = {
     create: jest.fn(),
     save: jest.fn(),
     find: jest.fn(),
@@ -84,7 +84,7 @@ describe('JournalsService', () => {
       const userId = 1;
       const data = { title: 'Updated' };
       const updatedJournal = { id, userId, title: 'Updated' };
-      
+
       mockRepository.update.mockResolvedValue({ affected: 1 });
       mockRepository.findOne.mockResolvedValue(updatedJournal);
 

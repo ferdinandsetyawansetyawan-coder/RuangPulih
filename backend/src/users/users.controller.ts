@@ -1,4 +1,14 @@
-import { Controller, Get, Post, Body, Param, Delete, UseInterceptors, UploadedFile, BadRequestException } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  Delete,
+  UseInterceptors,
+  UploadedFile,
+  BadRequestException,
+} from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
@@ -26,21 +36,29 @@ export class UsersController {
   }
 
   @Post(':id')
-  update(@Param('id') id: string, @Body() userData: Partial<User>): Promise<User | null> {
+  update(
+    @Param('id') id: string,
+    @Body() userData: Partial<User>,
+  ): Promise<User | null> {
     return this.usersService.update(+id, userData);
   }
 
   @Post(':id/avatar')
-  @UseInterceptors(FileInterceptor('avatar', {
-    storage: diskStorage({
-      destination: './uploads/avatars',
-      filename: (req, file, cb) => {
-        const randomName = uuidv4();
-        return cb(null, `${randomName}${extname(file.originalname)}`);
-      }
-    })
-  }))
-  async uploadAvatar(@Param('id') id: string, @UploadedFile() file: Express.Multer.File) {
+  @UseInterceptors(
+    FileInterceptor('avatar', {
+      storage: diskStorage({
+        destination: './uploads/avatars',
+        filename: (req, file, cb) => {
+          const randomName = uuidv4();
+          return cb(null, `${randomName}${extname(file.originalname)}`);
+        },
+      }),
+    }),
+  )
+  async uploadAvatar(
+    @Param('id') id: string,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
     if (!file) throw new BadRequestException('No file uploaded');
     const avatarUrl = `/uploads/avatars/${file.filename}`;
     return this.usersService.update(+id, { avatarUrl });

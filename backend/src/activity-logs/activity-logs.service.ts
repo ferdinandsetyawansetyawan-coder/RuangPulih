@@ -10,7 +10,12 @@ export class ActivityLogsService {
     private logsRepository: Repository<ActivityLog>,
   ) {}
 
-  async log(userId: number | null, action: string, description?: string, ipAddress?: string) {
+  async log(
+    userId: number | null,
+    action: string,
+    description?: string,
+    ipAddress?: string,
+  ) {
     const logEntry = this.logsRepository.create({
       userId,
       action,

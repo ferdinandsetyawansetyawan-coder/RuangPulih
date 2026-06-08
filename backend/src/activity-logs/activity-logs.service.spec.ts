@@ -5,7 +5,7 @@ import { ActivityLog } from './entities/activity-log.entity';
 
 describe('ActivityLogsService', () => {
   let service: ActivityLogsService;
-  let mockRepository = {
+  const mockRepository = {
     create: jest.fn(),
     save: jest.fn(),
     find: jest.fn(),
@@ -34,13 +34,23 @@ describe('ActivityLogsService', () => {
       const userId = 1;
       const action = 'TEST_ACTION';
       const description = 'Test description';
-      
+
       mockRepository.create.mockReturnValue({ userId, action, description });
-      mockRepository.save.mockResolvedValue({ id: 1, userId, action, description });
+      mockRepository.save.mockResolvedValue({
+        id: 1,
+        userId,
+        action,
+        description,
+      });
 
       const result = await service.log(userId, action, description);
       expect(result).toEqual({ id: 1, userId, action, description });
-      expect(mockRepository.create).toHaveBeenCalledWith({ userId, action, description, ipAddress: undefined });
+      expect(mockRepository.create).toHaveBeenCalledWith({
+        userId,
+        action,
+        description,
+        ipAddress: undefined,
+      });
       expect(mockRepository.save).toHaveBeenCalled();
     });
   });

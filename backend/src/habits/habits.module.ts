@@ -7,10 +7,7 @@ import { HabitCompletion } from './entities/habit-completion.entity';
 import { UsersModule } from '../users/users.module';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([Habit, HabitCompletion]),
-    UsersModule,
-  ],
+  imports: [TypeOrmModule.forFeature([Habit, HabitCompletion]), UsersModule],
   providers: [HabitsService],
   controllers: [HabitsController],
   exports: [HabitsService],

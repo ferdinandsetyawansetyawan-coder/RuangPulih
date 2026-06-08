@@ -6,7 +6,7 @@ import { ExecutionContext } from '@nestjs/common';
 
 describe('ActivityLogsController', () => {
   let controller: ActivityLogsController;
-  let mockActivityLogsService = {
+  const mockActivityLogsService = {
     findAll: jest.fn(),
   };
 
@@ -20,9 +20,9 @@ describe('ActivityLogsController', () => {
         },
       ],
     })
-    .overrideGuard(JwtAuthGuard)
-    .useValue({ canActivate: (context: ExecutionContext) => true })
-    .compile();
+      .overrideGuard(JwtAuthGuard)
+      .useValue({ canActivate: (context: ExecutionContext) => true })
+      .compile();
 
     controller = module.get<ActivityLogsController>(ActivityLogsController);
   });

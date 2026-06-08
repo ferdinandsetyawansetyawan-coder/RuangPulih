@@ -8,7 +8,14 @@ import { ForumLike } from './entities/like.entity';
 import { ForumSavedPost } from './entities/saved-post.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([ForumPost, ForumComment, ForumLike, ForumSavedPost])],
+  imports: [
+    TypeOrmModule.forFeature([
+      ForumPost,
+      ForumComment,
+      ForumLike,
+      ForumSavedPost,
+    ]),
+  ],
   controllers: [ForumController],
   providers: [ForumService],
   exports: [ForumService],

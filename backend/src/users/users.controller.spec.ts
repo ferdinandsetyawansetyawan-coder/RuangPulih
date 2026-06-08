@@ -4,7 +4,7 @@ import { UsersService } from './users.service';
 
 describe('UsersController', () => {
   let controller: UsersController;
-  let mockUsersService = {
+  const mockUsersService = {
     create: jest.fn(),
     findAll: jest.fn(),
     findOne: jest.fn(),

@@ -23,11 +23,11 @@ export class HabitsService {
 
     const todayDate = new Date();
     const today = todayDate.toISOString().split('T')[0];
-    
+
     const yesterdayDate = new Date();
     yesterdayDate.setDate(yesterdayDate.getDate() - 1);
     const yesterday = yesterdayDate.toISOString().split('T')[0];
-    
+
     // Get last 7 days labels
     const last7Days: string[] = [];
     for (let i = 6; i >= 0; i--) {
@@ -36,23 +36,25 @@ export class HabitsService {
       last7Days.push(d.toISOString().split('T')[0]);
     }
 
-    return Promise.all(habits.map(async h => {
-      const completionDates = h.completions.map(c => c.date);
-      const completedToday = completionDates.includes(today);
-      const completedYesterday = completionDates.includes(yesterday);
+    return Promise.all(
+      habits.map(async (h) => {
+        const completionDates = h.completions.map((c) => c.date);
+        const completedToday = completionDates.includes(today);
+        const completedYesterday = completionDates.includes(yesterday);
 
-      // If missed today AND yesterday, streak is broken
-      if (!completedToday && !completedYesterday && h.streakDays > 0) {
-        h.streakDays = 0;
-        await this.habitsRepository.update(h.id, { streakDays: 0 });
-      }
+        // If missed today AND yesterday, streak is broken
+        if (!completedToday && !completedYesterday && h.streakDays > 0) {
+          h.streakDays = 0;
+          await this.habitsRepository.update(h.id, { streakDays: 0 });
+        }
 
-      return {
-        ...h,
-        completedToday,
-        weekHistory: last7Days.map(date => completionDates.includes(date)),
-      };
-    }));
+        return {
+          ...h,
+          completedToday,
+          weekHistory: last7Days.map((date) => completionDates.includes(date)),
+        };
+      }),
+    );
   }
 
   async create(userId: number, habitData: Partial<Habit>): Promise<Habit> {
@@ -62,7 +64,11 @@ export class HabitsService {
     return savedHabit;
   }
 
-  async update(userId: number, id: number, habitData: Partial<Habit>): Promise<Habit | null> {
+  async update(
+    userId: number,
+    id: number,
+    habitData: Partial<Habit>,
+  ): Promise<Habit | null> {
     await this.habitsRepository.update({ id, userId }, habitData);
     return this.habitsRepository.findOneBy({ id, userId });
   }
@@ -77,12 +83,15 @@ export class HabitsService {
 
     const todayDate = new Date();
     const today = todayDate.toISOString().split('T')[0];
-    
+
     const yesterdayDate = new Date();
     yesterdayDate.setDate(yesterdayDate.getDate() - 1);
     const yesterday = yesterdayDate.toISOString().split('T')[0];
 
-    const completion = await this.completionsRepository.findOneBy({ habitId: id, date: today });
+    const completion = await this.completionsRepository.findOneBy({
+      habitId: id,
+      date: today,
+    });
 
     let completedToday = false;
     if (completion) {
@@ -93,10 +102,13 @@ export class HabitsService {
 
       // Recalculate streak (check consecutive days backwards from yesterday)
       let streak = 0;
-      let checkDate = new Date(yesterdayDate);
+      const checkDate = new Date(yesterdayDate);
       while (true) {
         const dateStr = checkDate.toISOString().split('T')[0];
-        const c = await this.completionsRepository.findOneBy({ habitId: id, date: dateStr });
+        const c = await this.completionsRepository.findOneBy({
+          habitId: id,
+          date: dateStr,
+        });
         if (c) {
           streak++;
           checkDate.setDate(checkDate.getDate() - 1);
@@ -107,12 +119,18 @@ export class HabitsService {
       habit.streakDays = streak;
     } else {
       // Toggling completion
-      const newCompletion = this.completionsRepository.create({ habitId: id, date: today });
+      const newCompletion = this.completionsRepository.create({
+        habitId: id,
+        date: today,
+      });
       await this.completionsRepository.save(newCompletion);
       await this.usersService.addExp(userId, 15);
       completedToday = true;
 
-      const completedYesterday = await this.completionsRepository.findOneBy({ habitId: id, date: yesterday });
+      const completedYesterday = await this.completionsRepository.findOneBy({
+        habitId: id,
+        date: yesterday,
+      });
       if (completedYesterday) {
         habit.streakDays++;
       } else {
@@ -121,7 +139,7 @@ export class HabitsService {
     }
 
     await this.habitsRepository.save(habit);
-    
+
     const user = await this.usersService.findOne(userId);
     if (!user) throw new Error('User not found');
 
@@ -129,7 +147,7 @@ export class HabitsService {
       completedToday,
       streakDays: habit.streakDays,
       exp: user.exp,
-      level: user.level
+      level: user.level,
     };
   }
 }

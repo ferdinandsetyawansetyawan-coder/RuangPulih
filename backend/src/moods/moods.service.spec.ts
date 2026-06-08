@@ -5,7 +5,7 @@ import { Mood } from './entities/mood.entity';
 
 describe('MoodsService', () => {
   let service: MoodsService;
-  let mockRepository = {
+  const mockRepository = {
     create: jest.fn(),
     save: jest.fn(),
     findOne: jest.fn(),
@@ -38,7 +38,10 @@ describe('MoodsService', () => {
 
       const result = await service.create(userId, moodData);
       expect(result).toEqual({ id: 1, userId, ...moodData });
-      expect(mockRepository.create).toHaveBeenCalledWith({ userId, ...moodData });
+      expect(mockRepository.create).toHaveBeenCalledWith({
+        userId,
+        ...moodData,
+      });
     });
   });
 

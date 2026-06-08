@@ -6,7 +6,7 @@ import { ExecutionContext } from '@nestjs/common';
 
 describe('ForumController', () => {
   let controller: ForumController;
-  let mockForumService = {
+  const mockForumService = {
     create: jest.fn(),
     findAll: jest.fn(),
     toggleLike: jest.fn(),
@@ -25,9 +25,9 @@ describe('ForumController', () => {
         },
       ],
     })
-    .overrideGuard(JwtAuthGuard)
-    .useValue({ canActivate: (context: ExecutionContext) => true })
-    .compile();
+      .overrideGuard(JwtAuthGuard)
+      .useValue({ canActivate: (context: ExecutionContext) => true })
+      .compile();
 
     controller = module.get<ForumController>(ForumController);
   });
@@ -51,7 +51,11 @@ describe('ForumController', () => {
   describe('findAll', () => {
     it('should call forumService.findAll', async () => {
       await controller.findAll('General', 'public', '1');
-      expect(mockForumService.findAll).toHaveBeenCalledWith(1, 'General', 'public');
+      expect(mockForumService.findAll).toHaveBeenCalledWith(
+        1,
+        'General',
+        'public',
+      );
     });
   });
 

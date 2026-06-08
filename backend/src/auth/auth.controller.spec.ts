@@ -5,7 +5,7 @@ import { UnauthorizedException } from '@nestjs/common';
 
 describe('AuthController', () => {
   let controller: AuthController;
-  let mockAuthService = {
+  const mockAuthService = {
     register: jest.fn(),
     validateUser: jest.fn(),
     login: jest.fn(),
@@ -14,9 +14,7 @@ describe('AuthController', () => {
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [AuthController],
-      providers: [
-        { provide: AuthService, useValue: mockAuthService },
-      ],
+      providers: [{ provide: AuthService, useValue: mockAuthService }],
     }).compile();
 
     controller = module.get<AuthController>(AuthController);
@@ -28,9 +26,17 @@ describe('AuthController', () => {
 
   describe('register', () => {
     it('should call authService.register', async () => {
-      const dto = { email: 'test@example.com', password: 'password', fullName: 'Test' };
+      const dto = {
+        email: 'test@example.com',
+        password: 'password',
+        fullName: 'Test',
+      };
       await controller.register(dto);
-      expect(mockAuthService.register).toHaveBeenCalledWith(dto.email, dto.password, dto.fullName);
+      expect(mockAuthService.register).toHaveBeenCalledWith(
+        dto.email,
+        dto.password,
+        dto.fullName,
+      );
     });
   });
 
@@ -43,7 +49,10 @@ describe('AuthController', () => {
 
       const result = await controller.login(dto);
       expect(result).toEqual({ access_token: 'token', user });
-      expect(mockAuthService.validateUser).toHaveBeenCalledWith(dto.email, dto.password);
+      expect(mockAuthService.validateUser).toHaveBeenCalledWith(
+        dto.email,
+        dto.password,
+      );
       expect(mockAuthService.login).toHaveBeenCalledWith(user);
     });
 
@@ -51,7 +60,9 @@ describe('AuthController', () => {
       const dto = { email: 'test@example.com', password: 'wrong-password' };
       mockAuthService.validateUser.mockResolvedValue(null);
 
-      await expect(controller.login(dto)).rejects.toThrow(UnauthorizedException);
+      await expect(controller.login(dto)).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
   });
 });

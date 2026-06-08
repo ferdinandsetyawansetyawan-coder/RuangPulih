@@ -83,8 +83,8 @@ __decorate([
             filename: (req, file, cb) => {
                 const randomName = (0, uuid_1.v4)();
                 return cb(null, `${randomName}${(0, path_1.extname)(file.originalname)}`);
-            }
-        })
+            },
+        }),
     })),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.UploadedFile)()),

@@ -1,4 +1,12 @@
-import { Controller, Get, Post, Body, Param, UseGuards, Query } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  UseGuards,
+  Query,
+} from '@nestjs/common';
 import { ForumService } from './forum.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
@@ -8,20 +16,20 @@ export class ForumController {
   constructor(private readonly forumService: ForumService) {}
 
   @Post()
-  async create(@Body() body: { userId: number; category: string; content: string; isAnonymous?: boolean }) {
-    console.log('Received create post request:', body);
-    try {
-      const result = await this.forumService.create(body.userId, {
-        category: body.category,
-        content: body.content,
-        isAnonymous: body.isAnonymous ?? false,
-      });
-      console.log('Post created successfully:', result.id);
-      return result;
-    } catch (error) {
-      console.error('Error creating post in controller:', error);
-      throw error;
-    }
+  async create(
+    @Body()
+    body: {
+      userId: number;
+      category: string;
+      content: string;
+      isAnonymous?: boolean;
+    },
+  ) {
+    return this.forumService.create(body.userId, {
+      category: body.category,
+      content: body.content,
+      isAnonymous: body.isAnonymous ?? false,
+    });
   }
 
   @Get()
@@ -30,7 +38,11 @@ export class ForumController {
     @Query('type') type?: string,
     @Query('userId') userId?: string,
   ) {
-    return this.forumService.findAll(userId ? +userId : undefined, category, type);
+    return this.forumService.findAll(
+      userId ? +userId : undefined,
+      category,
+      type,
+    );
   }
 
   @Post(':id/like')

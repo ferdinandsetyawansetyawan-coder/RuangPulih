@@ -19,7 +19,10 @@ export class ForumService {
     private savedPostRepository: Repository<ForumSavedPost>,
   ) {}
 
-  async create(userId: number, data: { category: string; content: string; isAnonymous?: boolean }) {
+  async create(
+    userId: number,
+    data: { category: string; content: string; isAnonymous?: boolean },
+  ) {
     console.log('ForumService.create - userId:', userId, 'data:', data);
     const post = this.forumRepository.create({
       userId,
@@ -30,7 +33,8 @@ export class ForumService {
   }
 
   async findAll(userId?: number, category?: string, type?: string) {
-    const query = this.forumRepository.createQueryBuilder('post')
+    const query = this.forumRepository
+      .createQueryBuilder('post')
       .leftJoinAndSelect('post.user', 'user')
       .loadRelationCountAndMap('post.likes', 'post.likesList')
       .loadRelationCountAndMap('post.comments', 'post.commentsList')
@@ -47,7 +51,9 @@ export class ForumService {
     }
 
     if (category === 'Tersimpan' && userId) {
-      query.innerJoin('post.savedBy', 'saved', 'saved.userId = :userId', { userId });
+      query.innerJoin('post.savedBy', 'saved', 'saved.userId = :userId', {
+        userId,
+      });
     }
 
     const posts = await query.getMany();
@@ -81,7 +87,9 @@ export class ForumService {
   }
 
   async toggleLike(userId: number, postId: number) {
-    const existing = await this.likeRepository.findOne({ where: { userId, postId } });
+    const existing = await this.likeRepository.findOne({
+      where: { userId, postId },
+    });
     if (existing) {
       await this.likeRepository.remove(existing);
       return { liked: false };
@@ -93,7 +101,9 @@ export class ForumService {
   }
 
   async toggleSave(userId: number, postId: number) {
-    const existing = await this.savedPostRepository.findOne({ where: { userId, postId } });
+    const existing = await this.savedPostRepository.findOne({
+      where: { userId, postId },
+    });
     if (existing) {
       await this.savedPostRepository.remove(existing);
       return { saved: false };

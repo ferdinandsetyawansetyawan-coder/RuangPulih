@@ -5,7 +5,7 @@ import { User } from './entities/user.entity';
 
 describe('UsersService', () => {
   let service: UsersService;
-  let mockRepository = {
+  const mockRepository = {
     find: jest.fn(),
     findOneBy: jest.fn(),
     create: jest.fn(),

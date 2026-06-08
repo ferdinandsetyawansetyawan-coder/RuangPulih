@@ -1,4 +1,14 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards, Query } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Body,
+  Param,
+  UseGuards,
+  Query,
+} from '@nestjs/common';
 import { HabitsService } from './habits.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
@@ -13,7 +23,15 @@ export class HabitsController {
   }
 
   @Post()
-  async create(@Body() body: { userId: number; title: string; subtitle?: string; emoji: string }) {
+  async create(
+    @Body()
+    body: {
+      userId: number;
+      title: string;
+      subtitle?: string;
+      emoji: string;
+    },
+  ) {
     return this.habitsService.create(body.userId, {
       title: body.title,
       subtitle: body.subtitle,
@@ -24,7 +42,8 @@ export class HabitsController {
   @Put(':id')
   async update(
     @Param('id') id: string,
-    @Body() body: { userId: number; title: string; subtitle?: string; emoji: string },
+    @Body()
+    body: { userId: number; title: string; subtitle?: string; emoji: string },
   ) {
     return this.habitsService.update(body.userId, +id, {
       title: body.title,
