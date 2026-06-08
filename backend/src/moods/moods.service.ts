@@ -24,4 +24,11 @@ export class MoodsService {
       order: { createdAt: 'DESC' },
     });
   }
+
+  async findAllByUser(userId: number) {
+    return this.moodsRepository.find({
+      where: { userId },
+      order: { createdAt: 'DESC' },
+    });
+  }
 }

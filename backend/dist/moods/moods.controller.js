@@ -30,6 +30,9 @@ let MoodsController = class MoodsController {
     async findLatest(userId) {
         return this.moodsService.findLatestByUser(+userId);
     }
+    async findAll(userId) {
+        return this.moodsService.findAllByUser(+userId);
+    }
 };
 exports.MoodsController = MoodsController;
 __decorate([
@@ -46,6 +49,13 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], MoodsController.prototype, "findLatest", null);
+__decorate([
+    (0, common_1.Get)('user/:userId'),
+    __param(0, (0, common_1.Param)('userId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], MoodsController.prototype, "findAll", null);
 exports.MoodsController = MoodsController = __decorate([
     (0, common_1.Controller)('moods'),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),

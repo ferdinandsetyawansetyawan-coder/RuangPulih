@@ -8,4 +8,5 @@ export declare class MoodsService {
         emoji: string;
     }): Promise<Mood>;
     findLatestByUser(userId: number): Promise<Mood | null>;
+    findAllByUser(userId: number): Promise<Mood[]>;
 }

@@ -8,4 +8,5 @@ export declare class MoodsController {
         emoji: string;
     }): Promise<import("./entities/mood.entity").Mood>;
     findLatest(userId: string): Promise<import("./entities/mood.entity").Mood | null>;
+    findAll(userId: string): Promise<import("./entities/mood.entity").Mood[]>;
 }

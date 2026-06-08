@@ -35,6 +35,12 @@ let MoodsService = class MoodsService {
             order: { createdAt: 'DESC' },
         });
     }
+    async findAllByUser(userId) {
+        return this.moodsRepository.find({
+            where: { userId },
+            order: { createdAt: 'DESC' },
+        });
+    }
 };
 exports.MoodsService = MoodsService;
 exports.MoodsService = MoodsService = __decorate([

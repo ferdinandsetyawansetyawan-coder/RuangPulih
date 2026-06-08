@@ -28,6 +28,10 @@ class _AktivitasPageState extends State<AktivitasPage> {
   int _totalHabit = 0;
   int _totalForum = 0;
   List<Map<String, dynamic>> _recentActivities = [];
+  
+  String _dominantMoodEmoji = '😐';
+  String _dominantMoodLabel = 'Biasa';
+  String _moodMessage = 'Belum ada data mood, yuk catat perasaanmu!';
 
   @override
   void initState() {
@@ -51,6 +55,7 @@ class _AktivitasPageState extends State<AktivitasPage> {
         ApiService.get('/journals/user/$userId'),
         ApiService.get('/habits?userId=$userId'),
         ApiService.get('/forum?authorId=$userId'),
+        ApiService.get('/moods/user/$userId'),
       ]);
 
       int jurnalCount = 0;
@@ -78,7 +83,6 @@ class _AktivitasPageState extends State<AktivitasPage> {
         final List hList = jsonDecode(futures[1].body);
         habitCount = hList.length;
         for (var h in hList) {
-          // If we had completion history, we could add them. For now, add creation.
           DateTime date = DateTime.now();
           if (h['createdAt'] != null) {
             date = DateTime.parse(h['createdAt']);
@@ -105,6 +109,44 @@ class _AktivitasPageState extends State<AktivitasPage> {
             'date': DateTime.parse(f['createdAt']),
             'icon': Icons.people_outline_rounded,
           });
+        }
+      }
+      
+      // Moods
+      String dominantEmoji = '😐';
+      String dominantLabel = 'Biasa';
+      String moodMessage = 'Belum ada data mood, yuk catat perasaanmu!';
+
+      if (futures[3].statusCode == 200) {
+        final List mList = jsonDecode(futures[3].body);
+        if (mList.isNotEmpty) {
+          Map<String, int> moodCounts = {};
+          Map<String, String> moodEmojis = {};
+          
+          for (var m in mList) {
+            String label = m['label'] ?? 'Biasa';
+            String emoji = m['emoji'] ?? '😐';
+            moodCounts[label] = (moodCounts[label] ?? 0) + 1;
+            moodEmojis[label] = emoji;
+          }
+          
+          int maxCount = 0;
+          moodCounts.forEach((label, count) {
+            if (count > maxCount) {
+              maxCount = count;
+              dominantLabel = label;
+            }
+          });
+          
+          dominantEmoji = moodEmojis[dominantLabel] ?? '😐';
+          
+          if (dominantLabel == 'Sedih' || dominantLabel == 'Cemas') {
+            moodMessage = 'Sepertinya hari-harimu akhir-akhir ini cukup berat ya. Peluk jauh, tetap semangat!';
+          } else if (dominantLabel == 'Bahagia' || dominantLabel == 'Baik') {
+            moodMessage = 'Luar biasa! Kamu memancarkan energi positif. Pertahankan terus ya!';
+          } else {
+            moodMessage = 'Mood kamu cukup stabil akhir-akhir ini. Tidak terlalu buruk, kan?';
+          }
         }
       }
 
@@ -171,6 +213,45 @@ class _AktivitasPageState extends State<AktivitasPage> {
               ),
             )
           else ...[
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 22),
+              child: Container(
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  color: AppColors.hero,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(color: AppColors.hero.withOpacity(0.3), blurRadius: 10, spreadRadius: 2, offset: const Offset(0, 4)),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 54, height: 54,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.15),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Center(child: Text(_dominantMoodEmoji, style: const TextStyle(fontSize: 28))),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('Rata-rata Mood Kamu', style: TextStyle(fontSize: 11, color: Colors.white70, fontWeight: FontWeight.w600)),
+                          const SizedBox(height: 4),
+                          Text(_dominantMoodLabel, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Colors.white)),
+                          const SizedBox(height: 4),
+                          Text(_moodMessage, style: const TextStyle(fontSize: 12, color: Colors.white), maxLines: 2, overflow: TextOverflow.ellipsis),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 22),
               child: Row(
