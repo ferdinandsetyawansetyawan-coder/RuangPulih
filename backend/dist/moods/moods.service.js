@@ -23,6 +23,10 @@ let MoodsService = class MoodsService {
         this.moodsRepository = moodsRepository;
     }
     async create(userId, moodData) {
+        const latestMood = await this.findLatestByUser(userId);
+        if (latestMood) {
+            return latestMood;
+        }
         const mood = this.moodsRepository.create({
             userId,
             ...moodData,
@@ -30,10 +34,18 @@ let MoodsService = class MoodsService {
         return this.moodsRepository.save(mood);
     }
     async findLatestByUser(userId) {
-        return this.moodsRepository.findOne({
+        const latestMood = await this.moodsRepository.findOne({
             where: { userId },
             order: { createdAt: 'DESC' },
         });
+        if (!latestMood)
+            return null;
+        const todayStr = new Date().toISOString().split('T')[0];
+        const moodDateStr = new Date(latestMood.createdAt).toISOString().split('T')[0];
+        if (todayStr === moodDateStr) {
+            return latestMood;
+        }
+        return null;
     }
     async findAllByUser(userId) {
         return this.moodsRepository.find({

@@ -11,6 +11,13 @@ export class MoodsService {
   ) {}
 
   async create(userId: number, moodData: { label: string; emoji: string }) {
+    // Cek apakah sudah ada mood hari ini
+    const latestMood = await this.findLatestByUser(userId);
+    if (latestMood) {
+      // Jika sudah ada mood hari ini, tidak usah buat baru (return yang sudah ada)
+      return latestMood;
+    }
+
     const mood = this.moodsRepository.create({
       userId,
       ...moodData,
@@ -19,10 +26,22 @@ export class MoodsService {
   }
 
   async findLatestByUser(userId: number) {
-    return this.moodsRepository.findOne({
+    const latestMood = await this.moodsRepository.findOne({
       where: { userId },
       order: { createdAt: 'DESC' },
     });
+
+    if (!latestMood) return null;
+
+    // Gunakan perbandingan string YYYY-MM-DD agar aman dari masalah timezone jam/menit
+    const todayStr = new Date().toISOString().split('T')[0];
+    const moodDateStr = new Date(latestMood.createdAt).toISOString().split('T')[0];
+    
+    if (todayStr === moodDateStr) {
+      return latestMood;
+    }
+
+    return null; 
   }
 
   async findAllByUser(userId: number) {

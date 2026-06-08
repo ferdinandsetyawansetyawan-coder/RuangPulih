@@ -128,6 +128,15 @@ class _AktivitasPageState extends State<AktivitasPage> {
             String emoji = m['emoji'] ?? '😐';
             moodCounts[label] = (moodCounts[label] ?? 0) + 1;
             moodEmojis[label] = emoji;
+            
+            // Tambahkan mood ke activity feed
+            allActivities.add({
+              'type': 'Quick Mood Check',
+              'title': 'Merasa $label $emoji',
+              'desc': 'Mencatat perasaan hari ini.',
+              'date': DateTime.parse(m['createdAt']),
+              'icon': Icons.mood_rounded,
+            });
           }
           
           int maxCount = 0;
@@ -154,6 +163,10 @@ class _AktivitasPageState extends State<AktivitasPage> {
 
       if (mounted) {
         setState(() {
+          _dominantMoodEmoji = dominantEmoji;
+          _dominantMoodLabel = dominantLabel;
+          _moodMessage = moodMessage;
+          
           _totalJurnal = jurnalCount;
           _totalHabit = habitCount;
           _totalForum = forumCount;

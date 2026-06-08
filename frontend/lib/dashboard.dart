@@ -114,20 +114,18 @@ class _DashboardPageState extends State<DashboardPage> {
     }
   }
 
+  bool _hasPickedMoodToday = false;
+
   Future<void> _loadLatestMood() async {
     if (_userId == null || _token == null) return;
     try {
-      final response = await http.get(
-        Uri.parse('http://10.0.2.2:3000/moods/latest/$_userId'),
-        headers: {
-          'Authorization': 'Bearer $_token',
-        },
-      );
+      final response = await ApiService.get('/moods/latest/$_userId');
       if (response.statusCode == 200 && response.body.isNotEmpty) {
         final data = jsonDecode(response.body);
-        if (data != null) {
+        if (data != null && data['label'] != null) {
           setState(() {
             _selectedMood = _moods.indexWhere((m) => m.label == data['label']);
+            _hasPickedMoodToday = true;
           });
         }
       }
@@ -138,22 +136,26 @@ class _DashboardPageState extends State<DashboardPage> {
 
   Future<void> _saveMood(int index) async {
     if (_userId == null || _token == null) return;
+    
+    if (_hasPickedMoodToday) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Kamu sudah mencatat perasaan hari ini. Terima kasih!')),
+      );
+      return;
+    }
+
     final mood = _moods[index];
-    setState(() => _selectedMood = index);
+    setState(() {
+      _selectedMood = index;
+      _hasPickedMoodToday = true;
+    });
 
     try {
-      await http.post(
-        Uri.parse('http://10.0.2.2:3000/moods'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $_token',
-        },
-        body: jsonEncode({
-          'userId': _userId,
-          'label': mood.label,
-          'emoji': mood.emoji,
-        }),
-      );
+      await ApiService.post('/moods', {
+        'userId': _userId,
+        'label': mood.label,
+        'emoji': mood.emoji,
+      });
     } catch (e) {
       // Mood save error ignored
     }
