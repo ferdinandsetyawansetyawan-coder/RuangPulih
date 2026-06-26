@@ -11,6 +11,8 @@ import 'artikel_untukmu.dart';
 import 'edit_profile.dart';
 import 'api_service.dart';
 import 'ai_chat.dart';
+import 'pilih_dokter.dart';
+import 'chat_dokter_page.dart';
 
 // Warna utama
 class AppColors {
@@ -462,7 +464,12 @@ class _DashboardPageState extends State<DashboardPage> {
           const Text('Mulai curhat\nsekarang', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800, color: Colors.white, height: 1.2, letterSpacing: -0.5)),
           const SizedBox(height: 18),
           GestureDetector(
-            onTap: () => setState(() => _selectedIndex = 5),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const PilihDokterPage()),
+              );
+            },
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
               decoration: BoxDecoration(color: Colors.white.withOpacity(0.15), borderRadius: BorderRadius.circular(30), border: Border.all(color: Colors.white.withOpacity(0.4), width: 1)),
@@ -489,7 +496,17 @@ class _DashboardPageState extends State<DashboardPage> {
           ),
         ),
         const SizedBox(width: 12),
-        Expanded(child: _buildKonsulCard(Icons.medical_services_outlined, 'Chat Dokter', 'Konsultasi profesional', const Color(0xFFEAE4F5), const Color(0xFF7B5EA7))),
+        Expanded(
+          child: GestureDetector(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const ChatDokterPage()),
+              );
+            },
+            child: _buildKonsulCard(Icons.medical_services_outlined, 'Chat Dokter', 'Konsultasi profesional', const Color(0xFFEAE4F5), const Color(0xFF7B5EA7)),
+          ),
+        ),
       ],
     );
   }

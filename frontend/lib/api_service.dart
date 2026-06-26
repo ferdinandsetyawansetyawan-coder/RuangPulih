@@ -7,9 +7,12 @@ class ApiService {
   static String get baseUrl {
     if (kIsWeb) {
       return 'http://localhost:3000';
+    } else if (defaultTargetPlatform == TargetPlatform.windows) {
+      return 'http://localhost:3000'; // Untuk Windows Desktop
+    } else if (defaultTargetPlatform == TargetPlatform.android) {
+      return 'http://10.0.2.2:3000'; // Untuk Android Emulator
     } else {
-      // Alamat untuk Android Emulator mengakses localhost komputer
-      return 'http://10.0.2.2:3000';
+      return 'http://localhost:3000'; // Fallback
     }
   }
 
@@ -25,7 +28,7 @@ class ApiService {
 
   static Future<http.Response> get(String endpoint) async {
     final headers = await _getHeaders();
-    return http.get(Uri.parse('$baseUrl$endpoint'), headers: headers);
+    return http.get(Uri.parse('$baseUrl$endpoint'), headers: headers).timeout(const Duration(seconds: 10));
   }
 
   static Future<http.Response> post(String endpoint, Map<String, dynamic> body) async {
@@ -34,7 +37,7 @@ class ApiService {
       Uri.parse('$baseUrl$endpoint'),
       headers: headers,
       body: jsonEncode(body),
-    );
+    ).timeout(const Duration(seconds: 10));
   }
 
   static Future<http.Response> put(String endpoint, Map<String, dynamic> body) async {
@@ -43,11 +46,11 @@ class ApiService {
       Uri.parse('$baseUrl$endpoint'),
       headers: headers,
       body: jsonEncode(body),
-    );
+    ).timeout(const Duration(seconds: 10));
   }
 
   static Future<http.Response> delete(String endpoint) async {
     final headers = await _getHeaders();
-    return http.delete(Uri.parse('$baseUrl$endpoint'), headers: headers);
+    return http.delete(Uri.parse('$baseUrl$endpoint'), headers: headers).timeout(const Duration(seconds: 10));
   }
 }

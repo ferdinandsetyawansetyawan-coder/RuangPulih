@@ -60,13 +60,12 @@ class _LoginPageState extends State<LoginPage> {
       setState(() => _isLoading = true);
       
       try {
-        final response = await http.post(
-          Uri.parse('${ApiService.baseUrl}/auth/login'),
-          headers: {'Content-Type': 'application/json'},
-          body: jsonEncode({
+        final response = await ApiService.post(
+          '/auth/login',
+          {
             'email': _emailCtrl.text.trim(),
             'password': _passCtrl.text,
-          }),
+          },
         );
 
         if (response.statusCode == 200) {
@@ -92,6 +91,7 @@ class _LoginPageState extends State<LoginPage> {
           );
         }
       } catch (e) {
+        debugPrint('Login error: $e');
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Tidak dapat terhubung ke server')),

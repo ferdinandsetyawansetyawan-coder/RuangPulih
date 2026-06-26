@@ -76,14 +76,13 @@ class _SignupPageState extends State<SignupPage> {
       setState(() => _isLoading = true);
 
       try {
-        final response = await http.post(
-          Uri.parse('${ApiService.baseUrl}/auth/register'),
-          headers: {'Content-Type': 'application/json'},
-          body: jsonEncode({
+        final response = await ApiService.post(
+          '/auth/register',
+          {
             'email': _emailCtrl.text.trim(),
             'password': _passCtrl.text,
             'fullName': _nameCtrl.text.trim(),
-          }),
+          },
         );
 
         if (response.statusCode == 201) {
@@ -100,6 +99,7 @@ class _SignupPageState extends State<SignupPage> {
           );
         }
       } catch (e) {
+        debugPrint('Signup error: $e');
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Tidak dapat terhubung ke server')),
