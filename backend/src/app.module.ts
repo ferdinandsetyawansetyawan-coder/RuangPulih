@@ -12,6 +12,7 @@ import { MoodsModule } from './moods/moods.module';
 import { ForumModule } from './forum/forum.module';
 import { JournalsModule } from './journals/journals.module';
 import { HabitsModule } from './habits/habits.module';
+import { AiModule } from './ai/ai.module';
 
 @Module({
   imports: [
@@ -46,6 +47,7 @@ import { HabitsModule } from './habits/habits.module';
     ForumModule,
     JournalsModule,
     HabitsModule,
+    AiModule,
   ],
   controllers: [AppController],
   providers: [AppService],

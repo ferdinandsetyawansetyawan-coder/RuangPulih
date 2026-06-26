@@ -10,6 +10,7 @@ import 'habit_tracker.dart';
 import 'artikel_untukmu.dart';
 import 'edit_profile.dart';
 import 'api_service.dart';
+import 'ai_chat.dart';
 
 // Warna utama
 class AppColors {
@@ -214,6 +215,7 @@ class _DashboardPageState extends State<DashboardPage> {
         selectedIndex: _selectedIndex,
         onNavTap: (i) => setState(() => _selectedIndex = i),
       );
+      case 9: return AiChatPage();
       default: return _buildBerandaTab();
     }
   }
@@ -475,7 +477,17 @@ class _DashboardPageState extends State<DashboardPage> {
   Widget _buildChatKonsultasi() {
     return Row(
       children: [
-        Expanded(child: _buildKonsulCard(Icons.auto_awesome_rounded, 'Chat AI', 'Siap mendengar 24 jam', AppColors.accentBg, AppColors.hero)),
+        Expanded(
+          child: GestureDetector(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const AiChatPage()),
+              );
+            },
+            child: _buildKonsulCard(Icons.auto_awesome_rounded, 'Chat AI', 'Siap mendengar 24 jam', AppColors.accentBg, AppColors.hero),
+          ),
+        ),
         const SizedBox(width: 12),
         Expanded(child: _buildKonsulCard(Icons.medical_services_outlined, 'Chat Dokter', 'Konsultasi profesional', const Color(0xFFEAE4F5), const Color(0xFF7B5EA7))),
       ],
