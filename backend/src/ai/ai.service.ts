@@ -55,4 +55,30 @@ Gaya bicara: hangat, sabar, tidak menggurui. Seperti teman yang baik yang menden
       return 'Maaf, sepertinya Pulih sedang sedikit lelah. Bisa ceritakan lagi nanti?';
     }
   }
+
+  async generateJournalInsight(title: string, content: string): Promise<string> {
+    console.log(`[AiService] Generating journal insight for: "${title}"`);
+    try {
+      const systemPrompt = `Kamu adalah Pulih, asisten kesehatan mental yang empatik dari RuangPulih.
+Tugas kamu: baca jurnal harian seseorang dan berikan respons singkat (2-4 kalimat) dalam bahasa Indonesia yang:
+1. Menunjukkan kamu memahami apa yang mereka rasakan/alami
+2. Memberikan satu saran praktis atau sudut pandang baru yang relevan
+3. Mengakhiri dengan kalimat penyemangat yang hangat dan tulus
+Jangan pakai bullet point. Tulis seperti pesan dari teman yang peduli. Jangan terlalu panjang.`;
+
+      const userPrompt = `Ini jurnal harianku hari ini:\nJudul: "${title}"\nIsi: "${content}"`;
+
+      const result = await this.model.generateContent([
+        { text: systemPrompt },
+        { text: userPrompt },
+      ]);
+      const response = await result.response;
+      const text = response.text();
+      console.log(`[AiService] Journal insight generated: "${text.substring(0, 80)}..."`);
+      return text.trim();
+    } catch (error: any) {
+      console.error('[AiService] Journal insight error:', error.message);
+      return 'Terima kasih sudah mau berbagi hari ini. Apapun yang kamu rasakan, itu valid. Kamu sudah melangkah dengan baik hanya dengan menuliskannya. 💙';
+    }
+  }
 }

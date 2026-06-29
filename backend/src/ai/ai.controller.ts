@@ -16,4 +16,14 @@ export class AiController {
       timestamp: new Date().toISOString(),
     };
   }
+
+  @Post('journal-insight')
+  async journalInsight(
+    @Body('title') title: string,
+    @Body('content') content: string,
+  ) {
+    console.log(`[AiController] POST /ai/journal-insight for: "${title}"`);
+    const insight = await this.aiService.generateJournalInsight(title, content);
+    return { insight };
+  }
 }

@@ -43,7 +43,6 @@ class _ArtikelUntukmuPageState extends State<ArtikelUntukmuPage> {
 
   static const _navItems = [
     _NavItem(icon: Icons.home_rounded, label: 'Beranda'),
-    _NavItem(icon: Icons.favorite_border_rounded, label: 'Sesi'),
     _NavItem(icon: Icons.forum_outlined, label: 'Forum'),
     _NavItem(icon: Icons.bar_chart_rounded, label: 'Aktifitas'),
     _NavItem(icon: Icons.person_outline_rounded, label: 'Profil'),

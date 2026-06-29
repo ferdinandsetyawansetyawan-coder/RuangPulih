@@ -65,9 +65,10 @@ Color _getToneColor(String tag) {
 
 // ─── Tone metadata ────────────────────────────────────────────────────────────
 class _ToneMeta {
-  final String tag;
+  final String tag;         // short label e.g. "Cemas 🌀"
+  final String motivation;  // full motivational message in Bahasa Indonesia
   final Color color;
-  const _ToneMeta(this.tag, this.color);
+  const _ToneMeta(this.tag, this.motivation, this.color);
 }
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
@@ -178,87 +179,75 @@ class _JurnalHarianPageState extends State<JurnalHarianPage>
     }
   }
 
-  // ─── AI Tone Analysis via Anthropic ────────────────────────────────────────
+  Future<_ToneMeta> _analyzeTone(String text, {String title = ''}) async {
+    final insight = _generateSmartInsight(text, title);
+    return _ToneMeta('', insight, const Color(0xFFE4F0EB));
+  }
 
-  // ─── Analisis Nada Lokal (keyword matching) ──────────────────────────────────
-  //
-  // Cara kerja:
-  //  1. Teks di-lowercase
-  //  2. Tiap kategori punya daftar kata kunci bahasa Indonesia
-  //  3. Hitung berapa kata kunci yang cocok per kategori
-  //  4. Kategori dengan skor tertinggi menang
-  //  5. Seri / tidak ada yang cocok → "Campur aduk 🌊"
-  //
-  Future<_ToneMeta> _analyzeTone(String text) async {
-    final lower = text.toLowerCase();
+  String _generateSmartInsight(String content, String title) {
+    final all = '${title.toLowerCase()} ${content.toLowerCase()}';
 
-    final Map<String, List<String>> keywords = {
-      'Tenang 🌿': [
-        'tenang', 'damai', 'nyaman', 'rileks', 'santai', 'aman', 'adem',
-        'istirahat', 'tidur', 'rehat', 'kalem', 'hening', 'sepi', 'sunyi',
-        'diam', 'duduk', 'napas', 'nafas', 'slow', 'pelan',
-      ],
-      'Berat 🌧': [
-        'berat', 'lelah', 'capek', 'penat', 'overwhelmed', 'tekanan',
-        'beban', 'sulit', 'susah', 'payah', 'nggak kuat', 'tidak kuat',
-        'deadline', 'numpuk', 'menumpuk', 'melelahkan', 'kewalahan',
-        'terpuruk', 'tertekan', 'burnout', 'exhausted',
-      ],
-      'Bersyukur ☀️': [
-        'syukur', 'bersyukur', 'terima kasih', 'makasih', 'beruntung',
-        'lega', 'senang', 'gembira', 'happy', 'suka', 'seru',
-        'menyenangkan', 'indah', 'bagus', 'luar biasa', 'terharu',
-        'bangga', 'hangat', 'berarti', 'bermakna',
-      ],
-      'Cemas 🌀': [
-        'cemas', 'khawatir', 'anxiety', 'gelisah', 'was-was', 'takut',
-        'gugup', 'grogi', 'panik', 'resah', 'tidak tenang', 'nggak tenang',
-        'gemetar', 'deg-degan', 'nervous', 'overthinking', 'ragu', 'bingung', 'galau',
-      ],
-      'Semangat ⚡': [
-        'semangat', 'energi', 'produktif', 'excited', 'antusias',
-        'termotivasi', 'motivasi', 'bisa', 'mampu', 'siap', 'optimis',
-        'berhasil', 'sukses', 'goal', 'target', 'fokus', 'gas', 'yakin', 'percaya diri',
-      ],
-      'Sedih 🌑': [
-        'sedih', 'nangis', 'menangis', 'air mata', 'sakit', 'perih',
-        'kecewa', 'patah hati', 'kehilangan', 'rindu', 'kangen',
-        'hampa', 'kosong', 'sendiri', 'lonely', 'ditinggal', 'gagal', 'menyesal',
-      ],
-    };
+    String? topic;
+    if (_has(all, ['skripsi', 'thesis', 'tesis'])) topic = 'skripsi';
+    else if (_has(all, ['research', 'penelitian', 'riset'])) topic = 'research';
+    else if (_has(all, ['ujian', 'exam', 'uts', 'uas', 'ulangan'])) topic = 'ujian';
+    else if (_has(all, ['tugas', 'pr', 'assignment', 'deadline'])) topic = 'tugas-tugas';
+    else if (_has(all, ['kuliah', 'kampus', 'kelas', 'dosen', 'mahasiswa'])) topic = 'kuliah';
+    else if (_has(all, ['kerja', 'kantor', 'kerjaan', 'boss', 'atasan', 'meeting'])) topic = 'kerjaan';
+    else if (_has(all, ['keluarga', 'ortu', 'orang tua', 'orangtua', 'adik', 'kakak', 'ayah', 'ibu', 'mama', 'papa'])) topic = 'keluarga';
+    else if (_has(all, ['pacar', 'hubungan', 'relationship', 'gebetan', 'mantan'])) topic = 'hubungan';
+    else if (_has(all, ['teman', 'sahabat', 'temen', 'bestie', 'friend'])) topic = 'pertemanan';
 
-    String bestTag = 'Campur aduk 🌊';
-    int bestScore = 0;
-    int categoriesWithScore = 0;
+    final isHappy   = _has(all, ['senang', 'bahagia', 'happy', 'gembira', 'seru', 'fun', 'enjoy', 'asik', 'asyik', 'menyenangkan']);
+    final isFree    = _has(all, ['bebas', 'libur', 'liburan', 'santai', 'rileks', 'relax']);
+    final isStress  = _has(all, ['stres', 'stress', 'tertekan', 'tekanan', 'pressure']);
+    final isTired   = _has(all, ['capek', 'lelah', 'penat', 'exhausted', 'kelelahan', 'kecapean']);
+    final isSad     = _has(all, ['sedih', 'nangis', 'menangis', 'kecewa', 'patah hati', 'hampa', 'kosong']);
+    final isAnxious = _has(all, ['cemas', 'khawatir', 'takut', 'gelisah', 'gugup', 'panik', 'was-was']);
+    final isAngry   = _has(all, ['marah', 'kesal', 'bete', 'frustrasi', 'jengkel', 'dongkol']);
+    final isOverwhelmed = _has(all, ['overwhelmed', 'kewalahan', 'banyak banget', 'numpuk', 'menumpuk', 'terlalu banyak']);
+    final isGrateful = _has(all, ['syukur', 'bersyukur', 'terima kasih', 'makasih', 'beruntung', 'lega', 'alhamdulillah']);
 
-    keywords.forEach((tag, words) {
-      int score = words.where((w) => lower.contains(w)).length;
-      if (score > 0) categoriesWithScore++;
-      if (score > bestScore) {
-        bestScore = score;
-        bestTag = tag;
-      }
-    });
-
-    // Jika skor rendah dan banyak kategori cocok → campur aduk
-    if (bestScore <= 1 && categoriesWithScore >= 2) {
-      bestTag = 'Campur aduk 🌊';
+    if (isHappy || isFree) {
+      if (topic != null) return 'Seneng banget denger kamu lagi di momen yang menyenangkan soal $topic hari ini! Simpan energi positif ini — ini yang bakal jadi bahan bakar kamu ke depan. Nikmati setiap detiknya ya! 🌟';
+      return 'Kamu lagi di momen yang menyenangkan dan itu keliatan banget dari tulisanmu! Energi kayak gini itu menular — terus bawa vibe positif ini. Kamu deserve semua kebahagiaan ini. ✨';
     }
 
-    return _ToneMeta(bestTag, _colorForTag(bestTag));
+    if (isGrateful) {
+      if (topic != null) return 'Rasa syukurmu soal $topic itu indah banget. Hati yang bisa bersyukur di tengah apapun adalah hati yang kuat. Terus jaga perspektif positif ini — itu salah satu superpower kamu. ☀️';
+      return 'Kamu bisa menemukan hal untuk disyukuri — itu bukan hal kecil. Rasa syukur itu latihan yang mengubah cara kita melihat dunia. Terus cultivate rasa ini ya. ☀️';
+    }
+
+    if (isOverwhelmed && topic != null) return 'Wajar banget kalau $topic terasa overwhelming sekarang — banyak hal datang sekaligus memang berat. Coba tulis semua yang perlu dikerjakan, pilih satu yang paling urgent, dan fokus di sana dulu. Sedikit demi sedikit, kamu pasti bisa lewatin ini. 💪';
+
+    if (isStress && topic != null) return 'Stres karena $topic itu valid dan kamu berhak merasakannya. Tapi ingat — kamu sudah melewati tekanan sebelumnya dan berhasil. Ambil napas, break sejenak, lalu kembali dengan kepala lebih jernih. Kamu lebih tangguh dari yang kamu kira! 🔥';
+
+    if (isTired && topic != null) return 'Capek karena $topic itu tanda kamu sudah kerja keras. Tubuh dan pikiranmu perlu istirahat — dan itu bukan kelemahan, itu kebutuhan. Rehat dulu, karena besok kamu akan bisa jauh lebih baik. Sudah melakukan yang terbaik hari ini! 💙';
+
+    if (isAnxious && topic != null) return 'Kecemasan soal $topic itu nyata dan kamu tidak berlebihan. Kamu cemas karena kamu peduli — itu artinya kamu orang yang bertanggung jawab. Tarik napas, fokus satu langkah kecil dulu, dan ingat kamu sudah lewatin banyak hal sulit sebelumnya. 🌀';
+
+    if (isAngry && topic != null) return 'Rasa kesal soal $topic itu wajar — perasaan itu perlu diakui, bukan ditekan. Tapi jangan biarkan kekesalan itu tinggal terlalu lama di hatimu. Setelah dingin, coba lihat dari sudut pandang lain — kadang ada hal yang bisa kita kontrol dan tidak. 🌬️';
+
+    if (isSad) return 'Kesedihan yang kamu rasakan itu bukan tanda kelemahan — justru itu tanda bahwa kamu punya hati yang dalam. Izinkan dirimu untuk merasakan ini sepenuhnya. Setelah hujan, selalu ada tanah yang lebih subur. Kamu tidak sendirian. 🌙';
+
+    if (isStress) return 'Tekanan yang kamu rasakan itu nyata dan kamu berhak mengakuinya. Ingat — kamu tidak harus menyelesaikan semuanya sekarang. Pecah jadi langkah kecil, dan rayakan setiap progres meski kecil. Kamu sudah melakukan yang terbaik! 💪';
+
+    if (isTired) return 'Rasa lelah itu tubuhmu lagi ngomong sesuatu yang perlu didengarkan. Istirahat bukan buang waktu — itu investasi supaya kamu bisa kembali lebih kuat. Kamu sudah melakukan cukup hari ini. 💙';
+
+    if (title.isNotEmpty) {
+      return 'Makasih udah mau nulis tentang "$title" hari ini. Nulis itu sendiri sudah jadi langkah healing yang berarti — kamu sedang belajar mengenal dirimu lebih dalam. Terus lakukan ini ya, setiap kata yang kamu tulis punya nilai. 🌿';
+    }
+    return 'Makasih sudah mau berbagi hari ini. Setiap jurnal yang kamu tulis adalah langkah untuk lebih mengenal dirimu sendiri — dan itu adalah perjalanan yang sangat berharga. Terus ya! 🌿';
   }
 
-  Color _colorForTag(String tag) {
-    if (tag.contains('Tenang')) return const Color(0xFFE4F0EB);
-    if (tag.contains('Berat')) return const Color(0xFFE8EDF5);
-    if (tag.contains('Bersyukur')) return const Color(0xFFFAF3E0);
-    if (tag.contains('Cemas')) return const Color(0xFFF5EAE4);
-    if (tag.contains('Semangat')) return const Color(0xFFEFF5E4);
-    if (tag.contains('Sedih')) return const Color(0xFFEEEEF3);
-    return const Color(0xFFEDE9E1);
+  bool _has(String text, List<String> keywords) =>
+      keywords.any((k) => text.contains(k));
+
+  String _toneMotivation(String toneTag) {
+    if (toneTag.contains('|||')) return toneTag.split('|||')[1];
+    return toneTag;
   }
 
-  // ─── Open write dialog ──────────────────────────────────────────────────────
   void _openWriteDialog({JurnalEntry? existing}) {
     final titleCtrl = TextEditingController(text: existing?.title ?? '');
     final contentCtrl = TextEditingController(text: existing?.content ?? '');
@@ -452,18 +441,16 @@ class _JurnalHarianPageState extends State<JurnalHarianPage>
                         setState(() => _isLoading = true);
 
                         try {
-                          // AI tone analysis
-                          final tone = await _analyzeTone(content);
-
+                          final tone = await _analyzeTone(content, title: title);
                           final mood = _moods[selectedMoodIdx];
                           if (existing != null) {
-                            await _updateEntry(existing.id, title, content, mood['emoji']!, mood['label']!, tone.tag);
+                            await _updateEntry(existing.id, title, content, mood['emoji']!, mood['label']!, tone.motivation);
                           } else {
-                            await _createEntry(title, content, mood['emoji']!, mood['label']!, tone.tag);
+                            await _createEntry(title, content, mood['emoji']!, mood['label']!, tone.motivation);
                           }
 
                           if (mounted) {
-                            _showToneSnackbar(tone.tag);
+                            _showSavedSnackbar();
                           }
                         } catch (e) {
                           debugPrint('Error saving entry: $e');
@@ -471,7 +458,7 @@ class _JurnalHarianPageState extends State<JurnalHarianPage>
                           if (mounted) setState(() => _isLoading = false);
                         }
                       },
-                      child: const Text('Simpan & Analisis Nada',
+                      child: const Text('Simpan',
                           style: TextStyle(
                               fontSize: 14, fontWeight: FontWeight.w700)),
                     ),
@@ -485,28 +472,25 @@ class _JurnalHarianPageState extends State<JurnalHarianPage>
     );
   }
 
-  void _showToneSnackbar(String tag) {
+  void _showSavedSnackbar() {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         behavior: SnackBarBehavior.floating,
         backgroundColor: AppColors.hero,
-        shape:
-        RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-        duration: const Duration(seconds: 3),
-        content: Row(
+        duration: const Duration(seconds: 2),
+        content: const Row(
           children: [
-            const Icon(Icons.auto_awesome_rounded,
+            Icon(Icons.check_circle_outline_rounded,
                 size: 16, color: Colors.white70),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                'Nada hari ini terdeteksi: $tag',
-                style: const TextStyle(
-                    fontSize: 13,
-                    color: Colors.white,
-                    fontWeight: FontWeight.w500),
-              ),
+            SizedBox(width: 8),
+            Text(
+              'Jurnal berhasil disimpan!',
+              style: TextStyle(
+                  fontSize: 13,
+                  color: Colors.white,
+                  fontWeight: FontWeight.w500),
             ),
           ],
         ),
@@ -701,7 +685,7 @@ class _JurnalHarianPageState extends State<JurnalHarianPage>
                         fontWeight: FontWeight.w500),
                   ),
                   const Spacer(),
-                  // Mood badge
+                  // Mood badge only
                   Container(
                     padding: const EdgeInsets.symmetric(
                         horizontal: 8, vertical: 3),
@@ -710,6 +694,7 @@ class _JurnalHarianPageState extends State<JurnalHarianPage>
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(entry.moodEmoji,
                             style: const TextStyle(fontSize: 11)),
@@ -722,27 +707,6 @@ class _JurnalHarianPageState extends State<JurnalHarianPage>
                       ],
                     ),
                   ),
-                  // Tone tag (AI)
-                  if (entry.toneTag.isNotEmpty) ...[
-                    const SizedBox(width: 6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: entry.toneColor,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                            color: AppColors.border2, width: 0.5),
-                      ),
-                      child: Text(
-                        entry.toneTag,
-                        style: const TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.text2),
-                      ),
-                    ),
-                  ],
                 ],
               ),
               const SizedBox(height: 10),
@@ -845,8 +809,7 @@ class _JurnalHarianPageState extends State<JurnalHarianPage>
                   ),
                   const SizedBox(height: 20),
 
-                  // Date + mood + tone row
-                  Row(
+                   Row(
                     children: [
                       Text(
                         _formatDate(entry.date),
@@ -861,45 +824,24 @@ class _JurnalHarianPageState extends State<JurnalHarianPage>
                           color: AppColors.accentBg,
                           borderRadius: BorderRadius.circular(20),
                         ),
-                        child: Row(children: [
-                          Text(entry.moodEmoji,
-                              style: const TextStyle(fontSize: 12)),
-                          const SizedBox(width: 4),
-                          Text(entry.moodLabel,
-                              style: const TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w600,
-                                  color: AppColors.hero)),
-                        ]),
-                      ),
-                      if (entry.toneTag.isNotEmpty) ...[
-                        const SizedBox(width: 6),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 3),
-                          decoration: BoxDecoration(
-                            color: entry.toneColor,
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                                color: AppColors.border2, width: 0.5),
-                          ),
-                          child: Row(children: [
-                            const Icon(Icons.auto_awesome_rounded,
-                                size: 10, color: AppColors.text2),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(entry.moodEmoji,
+                                style: const TextStyle(fontSize: 12)),
                             const SizedBox(width: 4),
-                            Text(entry.toneTag,
+                            Text(entry.moodLabel,
                                 style: const TextStyle(
-                                    fontSize: 10,
+                                    fontSize: 11,
                                     fontWeight: FontWeight.w600,
-                                    color: AppColors.text2)),
-                          ]),
+                                    color: AppColors.hero)),
+                          ],
                         ),
-                      ],
+                      ),
                     ],
                   ),
                   const SizedBox(height: 14),
 
-                  // Title
                   Text(
                     entry.title,
                     style: const TextStyle(
@@ -912,7 +854,6 @@ class _JurnalHarianPageState extends State<JurnalHarianPage>
                   const Divider(height: 1, color: AppColors.border),
                   const SizedBox(height: 16),
 
-                  // Full content
                   Text(
                     entry.content,
                     style: const TextStyle(
@@ -920,9 +861,29 @@ class _JurnalHarianPageState extends State<JurnalHarianPage>
                         color: AppColors.text1,
                         height: 1.75),
                   ),
-                  const SizedBox(height: 28),
+                  const SizedBox(height: 20),
 
-                  // Actions
+                  if (entry.toneTag.isNotEmpty) ...[
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: entry.toneColor,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                            color: AppColors.border2, width: 0.5),
+                      ),
+                      child: Text(
+                        _toneMotivation(entry.toneTag),
+                        style: const TextStyle(
+                            fontSize: 13,
+                            color: AppColors.text2,
+                            height: 1.6),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                  ],
+
                   Row(
                     children: [
                       Expanded(

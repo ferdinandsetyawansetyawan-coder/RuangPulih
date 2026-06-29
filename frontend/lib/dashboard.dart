@@ -46,10 +46,8 @@ class _DashboardPageState extends State<DashboardPage> {
   int _userLevel = 1;
   int _userExp = 0;
 
-  // --- DATA STATIS ---
   static const _navItems = [
     _NavItem(icon: Icons.home_rounded, label: 'Beranda'),
-    _NavItem(icon: Icons.favorite_border_rounded, label: 'Sesi'),
     _NavItem(icon: Icons.forum_outlined, label: 'Forum'),
     _NavItem(icon: Icons.bar_chart_rounded, label: 'Aktifitas'),
     _NavItem(icon: Icons.person_outline_rounded, label: 'Profil'),
@@ -197,10 +195,9 @@ class _DashboardPageState extends State<DashboardPage> {
   Widget _buildCurrentTab() {
     switch (_selectedIndex) {
       case 0: return _buildBerandaTab();
-      case 1: return _buildPlaceholderTab('Sesi Konsultasi');
-      case 2: return const ForumPage();
-      case 3: return const AktivitasPage();
-      case 4: return _buildProfilTab();
+      case 1: return const ForumPage();
+      case 2: return const AktivitasPage();
+      case 3: return _buildProfilTab();
       case 5: return CurhatBebasPage(onBack: () {
         _loadUserData();
         setState(() => _selectedIndex = 0);
@@ -254,7 +251,7 @@ class _DashboardPageState extends State<DashboardPage> {
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(22, 24, 22, 0),
-            child: _buildSectionHeader('Forum Anonim', onLihatSemua: () => setState(() => _selectedIndex = 2)),
+            child: _buildSectionHeader('Forum Anonim', onLihatSemua: () => setState(() => _selectedIndex = 1)),
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(22, 14, 22, 0),
@@ -730,7 +727,7 @@ class _DashboardPageState extends State<DashboardPage> {
             } else if (i == 1) {
               setState(() => _selectedIndex = 6);
             } else if (i == 2) {
-              setState(() => _selectedIndex = 2);
+              setState(() => _selectedIndex = 1);
             } else if (i == 3) {
               setState(() => _selectedIndex = 7);
             }
@@ -757,7 +754,7 @@ class _DashboardPageState extends State<DashboardPage> {
       child: Column(
         children: [
           GestureDetector(
-            onTap: () => setState(() => _selectedIndex = 2),
+            onTap: () => setState(() => _selectedIndex = 1),
             child: Padding(
               padding: const EdgeInsets.all(14),
               child: Row(
