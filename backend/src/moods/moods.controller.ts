@@ -19,4 +19,9 @@ export class MoodsController {
   async findLatest(@Param('userId') userId: string) {
     return this.moodsService.findLatestByUser(+userId);
   }
+
+  @Get('user/:userId')
+  async findAllByUser(@Param('userId') userId: string) {
+    return this.moodsService.findAllByUser(+userId);
+  }
 }

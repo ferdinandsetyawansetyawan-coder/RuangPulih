@@ -13,6 +13,7 @@ import 'api_service.dart';
 import 'ai_chat.dart';
 import 'pilih_dokter.dart';
 import 'chat_dokter_page.dart';
+import 'aktivitas.dart';
 
 // Warna utama
 class AppColors {
@@ -198,7 +199,7 @@ class _DashboardPageState extends State<DashboardPage> {
       case 0: return _buildBerandaTab();
       case 1: return _buildPlaceholderTab('Sesi Konsultasi');
       case 2: return const ForumPage();
-      case 3: return _buildPlaceholderTab('Aktifitas Kamu');
+      case 3: return const AktivitasPage();
       case 4: return _buildProfilTab();
       case 5: return CurhatBebasPage(onBack: () {
         _loadUserData();
@@ -273,94 +274,270 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   Widget _buildProfilTab() {
-    return Padding(
-      padding: const EdgeInsets.all(26),
+    return SingleChildScrollView(
       child: Column(
         children: [
-          const SizedBox(height: 20),
-          CircleAvatar(
-            radius: 50,
-            backgroundColor: AppColors.hero,
-            backgroundImage: _userAvatarUrl != null && _userAvatarUrl!.isNotEmpty 
-              ? NetworkImage(_userAvatarUrl!.startsWith('http') ? _userAvatarUrl! : '${ApiService.baseUrl}$_userAvatarUrl') 
-              : null,
-            child: _userAvatarUrl == null || _userAvatarUrl!.isEmpty 
-              ? const Icon(Icons.person_rounded, size: 50, color: Colors.white) 
-              : null,
-          ),
-          const SizedBox(height: 16),
-          Text(_userName, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.text1)),
-          Text(_userEmail, style: const TextStyle(fontSize: 14, color: AppColors.text3)),
-          const SizedBox(height: 24),
-          // User Stats
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+          Stack(
+            alignment: Alignment.topCenter,
             children: [
-              _buildStatCard('Level', '$_userLevel'),
-              const SizedBox(width: 16),
-              _buildStatCard('EXP', '$_userExp'),
+              Container(
+                height: 140,
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Color(0xFF2E4A42), Color(0xFF4E7A6E)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.vertical(bottom: Radius.circular(32)),
+                ),
+              ),
+              Column(
+                children: [
+                  const SizedBox(height: 80),
+                  Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: const BoxDecoration(
+                      color: AppColors.bg,
+                      shape: BoxShape.circle,
+                    ),
+                    child: CircleAvatar(
+                      radius: 54,
+                      backgroundColor: AppColors.accentBg,
+                      backgroundImage: _userAvatarUrl != null && _userAvatarUrl!.isNotEmpty 
+                        ? NetworkImage(_userAvatarUrl!.startsWith('http') ? _userAvatarUrl! : '${ApiService.baseUrl}$_userAvatarUrl') 
+                        : null,
+                      child: _userAvatarUrl == null || _userAvatarUrl!.isEmpty 
+                        ? const Icon(Icons.person_rounded, size: 54, color: AppColors.hero) 
+                        : null,
+                    ),
+                  ),
+                ],
+              ),
             ],
           ),
-          const SizedBox(height: 32),
-          _buildMenuTile(Icons.history_rounded, 'Riwayat Konsultasi', onTap: () {}),
-          _buildMenuTile(Icons.settings_outlined, 'Pengaturan Akun', onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => EditProfilePage(onProfileUpdated: _loadUserData)),
-            );
-          }),
-          _buildMenuTile(Icons.help_outline_rounded, 'Pusat Bantuan', onTap: () {}),
-          const Spacer(),
-          SizedBox(
-            width: double.infinity,
-            height: 50,
-            child: OutlinedButton.icon(
-              onPressed: _logout,
-              icon: const Icon(Icons.logout_rounded, color: Colors.redAccent),
-              label: const Text('Keluar Aplikasi', style: TextStyle(color: Colors.redAccent)),
-              style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: Colors.redAccent),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          const SizedBox(height: 16),
+          Text(_userName, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.text1, letterSpacing: -0.5)),
+          const SizedBox(height: 4),
+          Text(_userEmail, style: const TextStyle(fontSize: 14, color: AppColors.text2)),
+          
+          const SizedBox(height: 28),
+          
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 18),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.hero.withOpacity(0.06),
+                    blurRadius: 20,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  _buildStatItem('Level', '$_userLevel', Icons.star_rounded, const Color(0xFFE6A338)),
+                  Container(width: 1, height: 40, color: AppColors.border2),
+                  _buildStatItem('EXP', '$_userExp', Icons.bolt_rounded, const Color(0xFF388E3C)),
+                ],
               ),
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 24),
+          
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: AppColors.accentBg.withOpacity(0.5),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: AppColors.hero.withOpacity(0.15), width: 1),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: AppColors.hero.withOpacity(0.15),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.format_quote_rounded, color: AppColors.hero, size: 28),
+                  ),
+                  const SizedBox(width: 16),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Kutipan Hari Ini', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.hero)),
+                        SizedBox(height: 6),
+                        Text('"Perjalanan ribuan mil dimulai dengan satu langkah kecil. Kamu sudah memulainya."', style: TextStyle(fontSize: 12, color: AppColors.text2, fontStyle: FontStyle.italic, height: 1.4)),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          
+          const SizedBox(height: 28),
+          
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('Pencapaian Kamu', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.text1)),
+                GestureDetector(
+                  onTap: () {},
+                  child: const Text('Lihat Semua', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.hero)),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            height: 105,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              children: [
+                _buildAchievementBadge(Icons.local_fire_department_rounded, '3 Hari', 'Beruntun', const Color(0xFFFF7043)),
+                _buildAchievementBadge(Icons.favorite_rounded, 'Peduli', 'Sesama', const Color(0xFFEC407A)),
+                _buildAchievementBadge(Icons.edit_note_rounded, 'Rajin', 'Menulis', const Color(0xFF5C6BC0)),
+                _buildAchievementBadge(Icons.lock_outline_rounded, 'Terkunci', '???', AppColors.text3.withOpacity(0.5), isLocked: true),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 32),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.hero.withOpacity(0.06),
+                    blurRadius: 20,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
+              ),
+              child: Column(
+                children: [
+                  _buildMenuTile(Icons.history_rounded, 'Riwayat Konsultasi', onTap: () {}),
+                  const Divider(height: 1, color: AppColors.accentBg, indent: 64, endIndent: 20),
+                  _buildMenuTile(Icons.settings_outlined, 'Pengaturan Akun', onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => EditProfilePage(onProfileUpdated: _loadUserData)),
+                    );
+                  }),
+                  const Divider(height: 1, color: AppColors.accentBg, indent: 64, endIndent: 20),
+                  _buildMenuTile(Icons.help_outline_rounded, 'Pusat Bantuan', onTap: () {}),
+                ],
+              ),
+            ),
+          ),
+          
+          const SizedBox(height: 40),
+          
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: SizedBox(
+              width: double.infinity,
+              height: 54,
+              child: ElevatedButton.icon(
+                onPressed: _logout,
+                icon: const Icon(Icons.logout_rounded, color: Colors.white),
+                label: const Text('Keluar Aplikasi', style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w600)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFE57373),
+                  elevation: 0,
+                  shadowColor: Colors.transparent,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 40),
         ],
       ),
     );
   }
 
-  Widget _buildStatCard(String label, String value) {
+  Widget _buildStatItem(String label, String value, IconData icon, Color iconColor) {
+    return Column(
+      children: [
+        Row(
+          children: [
+            Icon(icon, size: 22, color: iconColor),
+            const SizedBox(width: 6),
+            Text(value, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: AppColors.text1)),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Text(label, style: const TextStyle(fontSize: 12, color: AppColors.text3, fontWeight: FontWeight.w600)),
+      ],
+    );
+  }
+
+  Widget _buildAchievementBadge(IconData icon, String title, String subtitle, Color color, {bool isLocked = false}) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      width: 80,
+      margin: const EdgeInsets.symmetric(horizontal: 4),
       decoration: BoxDecoration(
-        color: AppColors.accentBg.withOpacity(0.5),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.hero.withOpacity(0.2)),
+        border: Border.all(color: AppColors.border2, width: 0.5),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.hero.withOpacity(0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(value, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.hero)),
-          Text(label, style: const TextStyle(fontSize: 11, color: AppColors.text2, fontWeight: FontWeight.w500)),
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: isLocked ? AppColors.accentBg.withOpacity(0.3) : color.withOpacity(0.12),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, size: 24, color: isLocked ? AppColors.text3.withOpacity(0.5) : color),
+          ),
+          const SizedBox(height: 8),
+          Text(title, style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: isLocked ? AppColors.text3 : AppColors.text1)),
+          const SizedBox(height: 2),
+          Text(subtitle, style: const TextStyle(fontSize: 9, color: AppColors.text3)),
         ],
       ),
     );
   }
 
   Widget _buildMenuTile(IconData icon, String title, {required VoidCallback onTap}) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: AppColors.card,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.border2, width: 0.5),
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
+      leading: Container(
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: AppColors.accentBg.withOpacity(0.6),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Icon(icon, color: AppColors.hero, size: 20),
       ),
-      child: ListTile(
-        leading: Icon(icon, color: AppColors.hero),
-        title: Text(title, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
-        trailing: const Icon(Icons.chevron_right_rounded, size: 20, color: AppColors.text3),
-        onTap: onTap,
-      ),
+      title: Text(title, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.text1)),
+      trailing: const Icon(Icons.chevron_right_rounded, size: 22, color: AppColors.text3),
+      onTap: onTap,
     );
   }
 
